@@ -27,8 +27,8 @@
             </span>
           </td>
           <td>
-            <select #statusSelect (change)="updateOrderStatus(order.orderId, statusSelect.value)" class="status-select">
-              <option value="">Change Status</option>
+            <select #statusSelect (change)="updateOrderStatus(order, statusSelect.value)" class="status-select" [disabled]="updatingStatus[order.orderId]">
+              <option value="">{{ updatingStatus[order.orderId] ? 'Updating...' : 'Change Status' }}</option>
               <option value="Pending">Pending</option>
               <option value="Preparing">Preparing</option>
               <option value="Out for Delivery">Out for Delivery</option>

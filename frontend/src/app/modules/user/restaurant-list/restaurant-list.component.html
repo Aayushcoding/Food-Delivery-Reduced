@@ -10,10 +10,22 @@
     />
   </div>
 
-  <div *ngIf="loading" class="loading">Loading restaurants...</div>
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading">
+    Loading restaurants...
+  </div>
 
-  <div class="restaurant-table" *ngIf="!loading">
-    <table>
+  <!-- Data Display -->
+  <div *ngIf="!loading" class="restaurant-table">
+    <!-- Debug Info -->
+    <div class="debug-info">
+      <p><strong>Debug Info:</strong></p>
+      <p>Total Restaurants: {{ restaurants.length || 0 }}</p>
+      <p>Filtered Restaurants: {{ filteredRestaurants.length || 0 }}</p>
+    </div>
+
+    <!-- Table -->
+    <table *ngIf="filteredRestaurants && filteredRestaurants.length > 0" class="restaurants-table">
       <thead>
         <tr>
           <th>Restaurant Name</th>
@@ -24,14 +36,30 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let restaurant of filteredRestaurants">
-          <td>{{ restaurant.restaurantName }}</td>
-          <td>{{ restaurant.cuisine.join(', ') }}</td>
-          <td>{{ restaurant.rating }}</td>
-          <td>{{ restaurant.address }}</td>
-          <td>{{ restaurant.isVeg ? 'Yes' : 'No' }}</td>
+        <tr *ngFor="let restaurant of filteredRestaurants; let i = index"
+            (click)="selectRestaurant(restaurant)"
+            [class.selected]="selectedRestaurant?.restaurantId === restaurant.restaurantId"
+            class="clickable-row">
+          <td>{{ restaurant?.restaurantName || 'N/A' }}</td>
+          <td>{{ restaurant?.cuisine ? restaurant.cuisine.join(', ') : 'N/A' }}</td>
+          <td>{{ restaurant?.rating || 'N/A' }}</td>
+          <td>{{ restaurant?.address || 'N/A' }}</td>
+          <td>{{ restaurant?.isVeg ? 'Yes' : 'No' }}</td>
         </tr>
       </tbody>
     </table>
+
+    <!-- No Data Message -->
+    <div *ngIf="!filteredRestaurants || filteredRestaurants.length === 0" class="no-data">
+      <p>No restaurants found. Please try a different search.</p>
+    </div>
+  </div>
+
+  <!-- JSON Debug (remove after fixing) -->
+  <div class="json-debug" *ngIf="!loading && restaurants">
+    <details>
+      <summary>View Raw Data (Debug)</summary>
+      <pre>{{ restaurants | json }}</pre>
+    </details>
   </div>
 </div>

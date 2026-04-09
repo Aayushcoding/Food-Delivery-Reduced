@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { auth, roleAuth } = require('../middleware/auth');
+// Auth middleware DISABLED FOR NOW
+// const { auth, roleAuth } = require('../middleware/auth');
 const {
   getCarts,
   getCart,
@@ -13,36 +14,40 @@ const {
   deleteCart
 } = require('../controllers/cartController');
 
-// TODO: Add auth middleware here after JWT implementation
-// router.get('/', auth, roleAuth(['Customer']), getCarts);
-router.get('/', getCarts);
-// TODO: Add auth middleware here after JWT implementation
-// router.get('/:id', auth, roleAuth(['Customer']), getCart);
-router.get('/:id', getCart);
-// TODO: Add auth middleware here after JWT implementation
+// Specific routes before parameter routes
+// Auth middleware DISABLED FOR NOW - all APIs are public
 // router.get('/user/:userId', auth, roleAuth(['Customer']), getCartByUser);
 router.get('/user/:userId', getCartByUser);
 
-// TODO: Add auth middleware here after JWT implementation
-// router.post('/', auth, roleAuth(['Customer']), createCart);
-router.post('/', createCart);
-
-// TODO: Add auth middleware here after JWT implementation
-// router.put('/:id', auth, roleAuth(['Customer']), updateCart);
-router.put('/:id', updateCart);
-
-// Cart-specific operations
-// TODO: Add auth middleware here after JWT implementation
+// Cart-specific operations (POST must come before GET /:id to avoid conflicts)
+// Auth middleware DISABLED FOR NOW - all APIs are public
 // router.post('/add-item', auth, roleAuth(['Customer']), addItemToCart);
 router.post('/add-item', addItemToCart);
 
-// TODO: Add auth middleware here after JWT implementation
+// Auth middleware DISABLED FOR NOW - all APIs are public
 // router.put('/update-quantity', auth, roleAuth(['Customer']), updateItemQuantity);
 router.put('/update-quantity', updateItemQuantity);
 
-// TODO: Add auth middleware here after JWT implementation
+// Auth middleware DISABLED FOR NOW - all APIs are public
 // router.post('/remove-item', auth, roleAuth(['Customer']), removeItemFromCart);
 router.post('/remove-item', removeItemFromCart);
+
+// General routes
+// Auth middleware DISABLED FOR NOW - all APIs are public
+// router.get('/', auth, roleAuth(['Customer']), getCarts);
+router.get('/', getCarts);
+
+// Auth middleware DISABLED FOR NOW - all APIs are public
+// router.get('/:id', auth, roleAuth(['Customer']), getCart);
+router.get('/:id', getCart);
+
+// Auth middleware DISABLED FOR NOW - all APIs are public
+// router.post('/', auth, roleAuth(['Customer']), createCart);
+router.post('/', createCart);
+
+// Auth middleware DISABLED FOR NOW - all APIs are public
+// router.put('/:id', auth, roleAuth(['Customer']), updateCart);
+router.put('/:id', updateCart);
 
 // TODO: Add auth middleware here after JWT implementation
 // router.delete('/:id', auth, roleAuth(['Customer']), deleteCart);

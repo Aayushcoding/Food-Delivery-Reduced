@@ -7,22 +7,39 @@ const Order         = require('../models/Order');
 const Cart          = require('../models/Cart');
 const User          = require('../models/User');
 const DeliveryAgent = require('../models/DeliveryAgent');
+const Restaurant    = require('../models/Restaurant');
 
 // ── GET ALL ORDERS ─────────────────────────────────────────────────────────────
-// GET /api/orders?userId=usr_001&status=Pending&deliveryAgentId=agent_001
+// GET /api/orders?userId=usr_001&ownerId=usr_owner_001&restaurantId=rest_001
+//                &status=Pending&deliveryAgentId=agent_001
 //                &page=1&limit=10&sortBy=totalAmount&order=desc
 const getOrders = async (req, res) => {
   try {
     const {
-      userId, restaurantId, status, deliveryAgentId,
+      userId, restaurantId, ownerId, status, deliveryAgentId,
       page = 1, limit = 10, sortBy = 'date', order = 'desc'
     } = req.query;
 
     const filter = {};
     if (userId)          filter.userId          = userId;
-    if (restaurantId)    filter.restaurantId    = restaurantId;
     if (status)          filter.status          = status;
     if (deliveryAgentId) filter.deliveryAgentId = deliveryAgentId;
+
+    if (ownerId) {
+      const owned = await Restaurant.find({ ownerId });
+      const ids   = owned.map((r) => r.restaurantId);
+      if (ids.length === 0) {
+        return res.json({
+          success: true,
+          total:   0,
+          page:    parseInt(page),
+          data:    []
+        });
+      }
+      filter.restaurantId = { $in: ids };
+    } else if (restaurantId) {
+      filter.restaurantId = restaurantId;
+    }
 
     const sortOrder = order === 'desc' ? -1 : 1;
     const skip      = (parseInt(page) - 1) * parseInt(limit);
@@ -96,6 +113,10 @@ const placeOrderFromCart = async (req, res) => {
     const { cartId, deliveryAgentId } = req.body;
 
     if (!cartId) return res.status(400).json({ message: 'cartId is required' });
+
+    // Fetch cart from database
+    const cart = await Cart.findOne({ id: cartId });
+    if (!cart) return res.status(404).json({ message: 'Cart not found' });
 
     // TODO: Replace cart.userId with req.user.id after JWT integration
     // if (req.user.id !== cart.userId) {

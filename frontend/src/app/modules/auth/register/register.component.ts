@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -8,11 +8,12 @@ import { AuthService } from '../../../core/services/auth.service';
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.css']
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
 
   registerForm!: FormGroup;
   submitted = false;
   loading = false;
+  errorMessage = '';
 
   constructor(
     private formBuilder: FormBuilder,
@@ -53,20 +54,25 @@ export class RegisterComponent {
 
   onSubmit(): void {
     this.submitted = true;
+    this.errorMessage = '';
 
     if (this.registerForm.invalid) {
       return;
     }
 
     this.loading = true;
-    const selectedRole = this.f['role'].value === 'Owner' ? 'Owner' : 'Customer';
+    const selectedRole: 'Customer' | 'Owner' =
+      this.f['role'].value === 'Owner' ? 'Owner' : 'Customer';
+    const phoneDigits = String(this.f['phoneNo'].value).replace(/\D/g, '');
     const user = {
-      username: this.f['username'].value,
-      email: this.f['email'].value,
-      phoneNo: this.f['phoneNo'].value,
-      password: this.f['password'].value,
+      username: String(this.f['username'].value).trim(),
+      email: String(this.f['email'].value).trim().toLowerCase(),
+      phoneNo: phoneDigits,
+      password: String(this.f['password'].value),
       role: selectedRole
     };
+
+    console.log('Register payload (before POST /api/users):', user);
 
     this.authService.register(user).subscribe(
       (createdUser) => {
@@ -82,6 +88,7 @@ export class RegisterComponent {
       error => {
         console.error('Register error:', error);
         this.loading = false;
+        this.errorMessage = error?.error?.message || 'Registration failed. Please try again.';
       }
     );
   }

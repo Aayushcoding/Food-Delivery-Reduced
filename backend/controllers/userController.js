@@ -3,7 +3,8 @@
 // String query: User.findOne({ id: value }) — NO findById(), NO populate()
 
 const bcrypt = require('bcryptjs');
-const jwt    = require('jsonwebtoken');
+// JWT disabled for now (can be re-enabled later)
+// const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const User   = require('../models/User');
 const { successResponse, errorResponse } = require('../utils/responseFormatter');
@@ -57,49 +58,52 @@ const createUser = async (req, res) => {
   try {
     const { id, username, email, phoneNo, password, role, address } = req.body;
 
-    // Validate required fields
-    const validation = validateRequiredFields(req.body, ['username', 'email', 'phoneNo', 'password']);
+    const validation = validateRequiredFields(req.body, ['username', 'email', 'phoneNo', 'password', 'role']);
     if (!validation.isValid) {
       return errorResponse(res, validation.errors, 400);
     }
 
-    // Validate email format
     if (!isValidEmail(email)) {
       return errorResponse(res, 'Invalid email format', 400);
     }
 
-    // Validate phone number
     if (!isValidPhone(phoneNo)) {
       return errorResponse(res, 'Phone number must be 10-15 digits', 400);
     }
 
-    // Duplicate email check
-    const existing = await User.findOne({ email: email.toLowerCase() });
-    if (existing) {
-      return res.status(400).json({ message: 'Email already exists' });
+    const normalizedPhone = String(phoneNo).replace(/\D/g, '');
+    const emailLower = String(email).trim().toLowerCase();
+
+    const allowedRoles = ['Customer', 'Owner'];
+    if (!allowedRoles.includes(role)) {
+      return errorResponse(res, 'Invalid role. Use Customer or Owner.', 400);
     }
 
-    // Hash password before saving
+    const existing = await User.findOne({ email: emailLower });
+    if (existing) {
+      return errorResponse(res, 'Email already exists', 400);
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = new User({
       id:       id || `usr_${uuidv4().slice(0, 8)}`,
-      username,
-      email,
-      phoneNo,
+      username: String(username).trim(),
+      email:    emailLower,
+      phoneNo:  normalizedPhone,
       password: hashedPassword,
       address:  address || [],
-      role:     role || 'Customer'
+      role
     });
 
     const saved = await user.save();
     const result = saved.toObject();
     delete result.password;
 
-    // TODO: Generate JWT token here for future auth implementation
+    // JWT disabled for now (can be re-enabled later)
     // const token = jwt.sign(
     //   { userId: saved.id, role: saved.role },
-    //   process.env.JWT_SECRET,
+    //   process.env.JWT_SECRET || 'fooddelivery_secret_key_2024',
     //   { expiresIn: '24h' }
     // );
 
@@ -120,8 +124,8 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'email and password are required' });
     }
 
-    // Find user by email — string query
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const emailNorm = String(email).trim().toLowerCase();
+    const user = await User.findOne({ email: emailNorm });
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
@@ -137,21 +141,22 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // TODO: Generate JWT token here for future auth implementation
+    // JWT disabled for now (can be re-enabled later)
     // const token = jwt.sign(
     //   { id: user.id, role: user.role },
-    //   process.env.JWT_SECRET || 'fooddelivery_secret',
+    //   process.env.JWT_SECRET || 'fooddelivery_secret_key_2024',
     //   { expiresIn: '24h' }
     // );
 
     res.json({
       success: true,
-      // token,
       user: {
         id:       user.id,
         username: user.username,
         email:    user.email,
-        role:     user.role
+        phoneNo:  user.phoneNo,
+        role:     user.role,
+        address:  user.address
       }
     });
   } catch (error) {

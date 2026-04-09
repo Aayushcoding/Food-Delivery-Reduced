@@ -87,6 +87,10 @@
       </button>
     </form>
 
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
     <p class="register-link">
       Already have an account? <a routerLink="/auth/login">Login here</a>
     </p>

@@ -1,32 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const { auth, roleAuth } = require('../middleware/auth');
+// Auth middleware DISABLED FOR NOW
+// const { auth, roleAuth } = require('../middleware/auth');
 const {
   getOrders,
   getOrder,
   createOrder,
+  placeOrderFromCart,
   updateOrder,
   deleteOrder
 } = require('../controllers/orderController');
 
-// TODO: Add auth middleware here after JWT implementation
-// router.get('/', auth, getOrders);
+// Auth middleware DISABLED FOR NOW - all APIs are public
 router.get('/', getOrders);
 
-// TODO: Add auth middleware here after JWT implementation
-// router.get('/:id', auth, getOrder);
+// Auth middleware DISABLED FOR NOW - all APIs are public
 router.get('/:id', getOrder);
 
-// TODO: Add auth middleware here after JWT implementation
-// router.post('/', auth, roleAuth(['Customer']), createOrder);
+// Auth middleware DISABLED FOR NOW - all APIs are public
 router.post('/', createOrder);
 
-// TODO: Add auth middleware here after JWT implementation
-// router.put('/:id', auth, roleAuth(['Owner']), updateOrder);
+// Place order from cart - Customer only
+// Auth middleware DISABLED FOR NOW - all APIs are public
+router.post('/place', placeOrderFromCart);
+
+// Update order - Owner only (for status updates)
+// Auth middleware DISABLED FOR NOW - all APIs are public
 router.put('/:id', updateOrder);
 
-// TODO: Add auth middleware here after JWT implementation
-// router.delete('/:id', auth, roleAuth(['Owner']), deleteOrder);
+// Delete order - Owner only
+// Auth middleware DISABLED FOR NOW - all APIs are public
 router.delete('/:id', deleteOrder);
 
 module.exports = router;

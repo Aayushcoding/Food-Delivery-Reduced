@@ -9,10 +9,12 @@ const {
   deleteUser
 } = require('../controllers/userController');
 
-router.get('/', getUsers);
-router.get('/:id', getUser);
+// POST /api/users — register (JWT disabled for now (can be re-enabled later))
 router.post('/', createUser);
 router.post('/login', loginUser);
+
+router.get('/', getUsers);
+router.get('/:id', getUser);
 router.put('/:id', updateUser);
 router.delete('/:id', deleteUser);
 

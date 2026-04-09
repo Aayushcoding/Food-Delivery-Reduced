@@ -13,9 +13,17 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   canActivate(): boolean {
-    const token = this.authService.getToken();
-    if (!token) {
-      this.router.navigate(['/login']);
+    // JWT DISABLED FOR NOW - check for user in localStorage instead
+    // const token = this.authService.getToken();
+    // if (!token) {
+    //   this.router.navigate(['/auth/login']);
+    //   return false;
+    // }
+    
+    // Check if user exists in localStorage
+    const user = this.authService.getCurrentUserValue();
+    if (!user) {
+      this.router.navigate(['/auth/login']);
       return false;
     }
     return true;

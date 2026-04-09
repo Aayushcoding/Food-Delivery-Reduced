@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { auth, roleAuth } = require('../middleware/auth');
+// Auth middleware DISABLED FOR NOW
+// const { auth, roleAuth } = require('../middleware/auth');
 const {
   getRestaurants,
   getRestaurant,
@@ -11,8 +12,11 @@ const {
 
 router.get('/', getRestaurants); // Public - customers can view
 router.get('/:id', getRestaurant); // Public - customers can view
-router.post('/', auth, roleAuth(['Owner']), createRestaurant); // Only owners can create
-router.put('/:id', auth, roleAuth(['Owner']), updateRestaurant); // Only owners can update
-router.delete('/:id', auth, roleAuth(['Owner']), deleteRestaurant); // Only owners can delete
+// Auth middleware DISABLED FOR NOW - all APIs are public
+router.post('/', createRestaurant); // All users can create
+// Auth middleware DISABLED FOR NOW - all APIs are public
+router.put('/:id', updateRestaurant); // All users can update
+// Auth middleware DISABLED FOR NOW - all APIs are public
+router.delete('/:id', deleteRestaurant); // All users can delete
 
 module.exports = router;

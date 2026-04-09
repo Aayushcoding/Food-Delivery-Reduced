@@ -9,7 +9,7 @@ import { User } from '../../shared/models/index';
 })
 export class AuthService {
 
-  private isLoggedIn = new BehaviorSubject<boolean>(this.hasToken());
+  private isLoggedIn = new BehaviorSubject<boolean>(this.hasUser());
   private currentUser = new BehaviorSubject<User | null>(this.getStoredUser());
 
   constructor(private apiService: ApiService) { }
@@ -17,8 +17,9 @@ export class AuthService {
   login(email: string, password: string, role: string): Observable<User> {
     return this.apiService.loginUser(email, password, role).pipe(
       map((response: any) => {
-        const { token, user } = response;
-        localStorage.setItem('token', token);
+        // JWT disabled - just extract user object
+        const user = response.user;
+        // Store user in localStorage (no token needed)
         localStorage.setItem('user', JSON.stringify(user));
         this.isLoggedIn.next(true);
         this.currentUser.next(user);
@@ -28,12 +29,16 @@ export class AuthService {
     );
   }
 
-  register(userData: any): Observable<User> {
+  register(userData: {
+    username: string;
+    email: string;
+    phoneNo: string;
+    password: string;
+    role: 'Customer' | 'Owner';
+  }): Observable<User> {
     return this.apiService.createUser(userData).pipe(
-      map((user: User) => {
-        // Don't set token on registration - user needs to login after registration
-        localStorage.setItem('user', JSON.stringify(user));
-        this.currentUser.next(user);
+      map((response: any) => {
+        const user = response.data as User;
         return user;
       }),
       catchError(err => throwError(() => err))
@@ -41,7 +46,7 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem('token');
+    // Remove user from localStorage
     localStorage.removeItem('user');
     this.isLoggedIn.next(false);
     this.currentUser.next(null);
@@ -59,12 +64,13 @@ export class AuthService {
     return this.currentUser.value;
   }
 
-  getToken(): string | null {
-    return localStorage.getItem('token');
-  }
+  // JWT is disabled - no token handling needed
+  // getToken(): string | null {
+  //   return localStorage.getItem('token');
+  // }
 
-  private hasToken(): boolean {
-    return !!localStorage.getItem('token');
+  private hasUser(): boolean {
+    return !!localStorage.getItem('user');
   }
 
   private getStoredUser(): User | null {

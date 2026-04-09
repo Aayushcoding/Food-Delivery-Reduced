@@ -30,7 +30,7 @@
                 </div>
                 <div class="col-md-4">
                   <h5 class="card-title mb-1">{{ item.name }}</h5>
-                  <p class="card-text text-muted small mb-0">{{ item.description }}</p>
+                  <p class="card-text text-muted small mb-0">{{ item.description || item.category }}</p>
                   <p class="text-primary fw-bold mb-0">₹{{ item.price }}</p>
                 </div>
                 <div class="col-md-3">

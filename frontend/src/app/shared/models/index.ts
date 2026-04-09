@@ -47,6 +47,8 @@ export interface CartItem {
   name?: string;
   description?: string;
   image?: string;
+  category?: string;
+  isVeg?: boolean;
 }
 
 export interface Cart {
@@ -69,9 +71,12 @@ export interface Order {
   restaurantId: string;
   items: OrderItem[];
   totalAmount: number;
-  status: 'Pending' | 'Preparing' | 'Out for Delivery' | 'Delivered';
+  status: 'Pending' | 'Confirmed' | 'Preparing' | 'Out for Delivery' | 'Delivered' | 'Cancelled';
   date: Date;
-  deliveryAgentId: string;
+  deliveryAgentId?: string;
+  deliveryAddress?: string;
+  deliveryFee?: number;
+  gstAmount?: number;
 }
 
 export interface DeliveryAgent {

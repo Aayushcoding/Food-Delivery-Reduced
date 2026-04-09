@@ -7,7 +7,9 @@ import { ManageOrdersComponent } from './manage-orders/manage-orders.component';
 const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent },
   { path: 'manage-menu', component: AddMenuComponent },
+  { path: 'menu/add', component: AddMenuComponent },
   { path: 'manage-orders', component: ManageOrdersComponent },
+  { path: 'orders', component: ManageOrdersComponent },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
 ];
 

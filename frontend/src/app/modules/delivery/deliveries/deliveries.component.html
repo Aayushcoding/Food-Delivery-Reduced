@@ -21,8 +21,8 @@
         <p><strong>Items:</strong> {{ delivery.items.length }}</p>
       </div>
       <div class="delivery-actions">
-        <select #statusSelect (change)="updateDeliveryStatus(delivery.orderId, statusSelect.value)" class="status-select">
-          <option value="">Update Status</option>
+        <select #statusSelect (change)="updateDeliveryStatus(delivery, statusSelect.value)" class="status-select" [disabled]="updatingStatus[delivery.orderId]">
+          <option value="">{{ updatingStatus[delivery.orderId] ? 'Updating...' : 'Update Status' }}</option>
           <option value="Preparing">Preparing</option>
           <option value="Out for Delivery">Out for Delivery</option>
           <option value="Delivered">Delivered</option>
