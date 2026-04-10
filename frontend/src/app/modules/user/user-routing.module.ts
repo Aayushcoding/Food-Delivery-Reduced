@@ -5,6 +5,7 @@ import { RestaurantListComponent } from './restaurant-list/restaurant-list.compo
 import { MenuComponent } from './menu/menu.component';
 import { CartComponent } from './cart/cart.component';
 import { OrdersComponent } from './orders/orders.component';
+import { ProfileComponent } from './profile/profile.component';
 
 const routes: Routes = [
   { path: 'home', component: HomeComponent },
@@ -12,6 +13,7 @@ const routes: Routes = [
   { path: 'menu/:restaurantId', component: MenuComponent },
   { path: 'cart', component: CartComponent },
   { path: 'orders', component: OrdersComponent },
+  { path: 'profile', component: ProfileComponent },
   { path: '', redirectTo: 'home', pathMatch: 'full' }
 ];
 

@@ -5,11 +5,13 @@ import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { DeliveryRoutingModule } from './delivery-routing.module';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { DeliveriesComponent } from './deliveries/deliveries.component';
+import { DeliveryProfileComponent } from './profile/profile.component';
 
 @NgModule({
   declarations: [
     DashboardComponent,
-    DeliveriesComponent
+    DeliveriesComponent,
+    DeliveryProfileComponent
   ],
   imports: [
     CommonModule,

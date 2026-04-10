@@ -8,6 +8,7 @@ import { RestaurantListComponent } from './restaurant-list/restaurant-list.compo
 import { MenuComponent } from './menu/menu.component';
 import { CartComponent } from './cart/cart.component';
 import { OrdersComponent } from './orders/orders.component';
+import { ProfileComponent } from './profile/profile.component';
 
 @NgModule({
   declarations: [
@@ -15,7 +16,8 @@ import { OrdersComponent } from './orders/orders.component';
     RestaurantListComponent,
     MenuComponent,
     CartComponent,
-    OrdersComponent
+    OrdersComponent,
+    ProfileComponent
   ],
   imports: [
     CommonModule,

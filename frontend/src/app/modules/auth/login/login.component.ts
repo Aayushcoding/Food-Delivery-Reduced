@@ -15,7 +15,7 @@ export class LoginComponent {
   loading = false;
   selectedRole: 'Customer' | 'Owner' = 'Customer';
   successMessage: string = '';
-
+  errorMessage: string = '';
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
@@ -54,14 +54,23 @@ export class LoginComponent {
 
   onSubmit(): void {
     this.submitted = true;
+    this.errorMessage = '';
 
     if (this.loginForm.invalid) {
       return;
     }
 
     this.loading = true;
-    this.authService.login(this.f['email'].value, this.f['password'].value, this.selectedRole).subscribe(
+    const email = this.f['email'].value;
+    const password = this.f['password'].value;
+    
+    console.log('[LoginComponent] Submitting login form:', { email, role: this.selectedRole });
+    
+    this.authService.login(email, password, this.selectedRole).subscribe(
       (user) => {
+        console.log('[LoginComponent] Login successful:', user);
+        this.loading = false;
+        console.log('[LoginComponent] Redirecting to:', this.selectedRole === 'Customer' ? '/user/home' : '/owner/dashboard');
         if (this.selectedRole === 'Customer') {
           this.router.navigate(['/user/home']);
         } else {
@@ -69,8 +78,9 @@ export class LoginComponent {
         }
       },
       error => {
-        console.error('Login error:', error);
+        console.error('[LoginComponent] Login error:', error);
         this.loading = false;
+        this.errorMessage = error?.error?.message || 'Login failed. Please check your email and password.';
       }
     );
   }

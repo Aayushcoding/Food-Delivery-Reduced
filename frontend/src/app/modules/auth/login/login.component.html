@@ -10,6 +10,11 @@
       {{ successMessage }}
     </div>
 
+    <!-- Error Message -->
+    <div *ngIf="errorMessage" class="alert alert-danger">
+      {{ errorMessage }}
+    </div>
+
     <!-- Role Selection -->
     <div class="role-selection">
       <button

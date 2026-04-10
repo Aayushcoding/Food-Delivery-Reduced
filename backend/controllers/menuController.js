@@ -1,118 +1,167 @@
 // controllers/menuController.js
-// Fields: menuId, restaurantId, itemName, price, category, rating,
-//         isAvailable, description, isVeg, imageUrl
-// String query: Menu.findOne({ menuId: value }) — NO findById(), NO populate()
+// Using db.json for data persistence (NO MongoDB)
 
-const Menu       = require('../models/Menu');
-const Restaurant = require('../models/Restaurant');
+const { getAllMenus, getMenuById, getMenusByRestaurant, addMenu, updateMenu: dbUpdateMenu, getRestaurantById } = require('../utils/dbManager');
 
 // ── GET ALL MENU ITEMS ─────────────────────────────────────────────────────────
-// GET /api/menus?restaurantId=rest_001&isVeg=true&isAvailable=true
-//               &category=Indian&search=biryani&page=1&limit=10&sortBy=price&order=asc
+// GET /api/menu?restaurantId=rest_001&isVeg=true&category=Indian&search=biryani&page=1&limit=10
 const getMenus = async (req, res) => {
   try {
     const {
-      restaurantId, isVeg, isAvailable, category,
-      search, page = 1, limit = 10, sortBy = 'itemName', order = 'asc'
+      restaurantId, isVeg, category, search, page = 1, limit = 10, sortBy = 'itemName', order = 'asc'
     } = req.query;
 
-    const filter = {};
+    let menus = getAllMenus();
 
-    if (restaurantId)             filter.restaurantId = restaurantId;
-    if (category)                 filter.category     = { $regex: category, $options: 'i' };
-    if (isVeg !== undefined)      filter.isVeg        = isVeg === 'true';
-    if (isAvailable !== undefined)filter.isAvailable  = isAvailable === 'true';
-    if (search) {
-      filter.$or = [
-        { itemName:    { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { category:    { $regex: search, $options: 'i' } }
-      ];
+    // Apply filters
+    if (restaurantId) {
+      menus = menus.filter(m => String(m.restaurantId) === String(restaurantId));
     }
 
+    if (isVeg !== undefined) {
+      menus = menus.filter(m => String(m.isVeg) === String(isVeg === 'true'));
+    }
+
+    if (category) {
+      const categoryLower = String(category).toLowerCase();
+      menus = menus.filter(m => String(m.category || '').toLowerCase() === categoryLower);
+    }
+
+    if (search) {
+      const searchLower = String(search).toLowerCase();
+      menus = menus.filter(m =>
+        String(m.itemName).toLowerCase().includes(searchLower) ||
+        String(m.description || '').toLowerCase().includes(searchLower) ||
+        String(m.category || '').toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply sorting
     const sortOrder = order === 'desc' ? -1 : 1;
-    const skip      = (parseInt(page) - 1) * parseInt(limit);
-    const total     = await Menu.countDocuments(filter);
+    menus.sort((a, b) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
 
-    const menus = await Menu.find(filter)
-      .sort({ [sortBy]: sortOrder })
-      .skip(skip)
-      .limit(parseInt(limit));
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
 
-    res.json({ success: true, total, page: parseInt(page), data: menus });
+      if (aVal < bVal) return -1 * sortOrder;
+      if (aVal > bVal) return 1 * sortOrder;
+      return 0;
+    });
+
+    // Apply pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+    const total = menus.length;
+
+    const paginatedMenus = menus.slice(skip, skip + limitNum);
+
+    res.json({ success: true, total, page: pageNum, limit: limitNum, data: paginatedMenus });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error in getMenus:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // ── GET SINGLE MENU ITEM ───────────────────────────────────────────────────────
-// GET /api/menus/:id   (id = "menu_001")
+// GET /api/menu/:id
 const getMenu = async (req, res) => {
   try {
-    // String-based query — DO NOT use findById()
-    const menu = await Menu.findOne({ menuId: req.params.id });
-    if (!menu) return res.status(404).json({ message: 'Menu item not found' });
-    res.json(menu);
+    const menu = getMenuById(req.params.id);
+    if (!menu) {
+      return res.status(404).json({ success: false, message: 'Menu item not found' });
+    }
+    res.json({ success: true, data: menu });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error in getMenu:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // ── CREATE MENU ITEM ───────────────────────────────────────────────────────────
-// POST /api/menus
+// POST /api/menu
 const createMenu = async (req, res) => {
   try {
-    const { menuId, restaurantId, itemName, price } = req.body;
+    const { menuId, itemName, price, restaurantId } = req.body;
 
-    if (!menuId || !restaurantId || !itemName || price === undefined) {
-      return res.status(400).json({ message: 'menuId, restaurantId, itemName and price are required' });
+    if (!menuId || !itemName || price === undefined || !restaurantId) {
+      return res.status(400).json({ success: false, message: 'menuId, itemName, price, and restaurantId are required' });
     }
 
-    // Verify restaurant exists using string query
-    const restaurant = await Restaurant.findOne({ restaurantId });
+    // Verify restaurant exists
+    const restaurant = getRestaurantById(restaurantId);
     if (!restaurant) {
-      return res.status(404).json({ message: `Restaurant '${restaurantId}' not found` });
+      return res.status(404).json({ success: false, message: `Restaurant '${restaurantId}' not found` });
     }
 
-    const existing = await Menu.findOne({ menuId });
-    if (existing) return res.status(409).json({ message: `Menu item '${menuId}' already exists` });
+    // Check if menu item already exists
+    if (getMenuById(menuId)) {
+      return res.status(409).json({ success: false, message: `Menu item with id '${menuId}' already exists` });
+    }
 
-    const menu  = new Menu(req.body);
-    const saved = await menu.save();
-    res.status(201).json({ success: true, data: saved });
+    const newMenu = addMenu({
+      menuId,
+      itemName,
+      price,
+      restaurantId,
+      description: req.body.description || '',
+      category: req.body.category || 'Others',
+      isVeg: req.body.isVeg || false,
+      isAvailable: req.body.isAvailable !== false,
+      imageUrl: req.body.imageUrl || ''
+    });
+
+    if (!newMenu) {
+      return res.status(500).json({ success: false, message: 'Failed to create menu item' });
+    }
+
+    res.status(201).json({ success: true, data: newMenu });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error in createMenu:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // ── UPDATE MENU ITEM ───────────────────────────────────────────────────────────
-// PUT /api/menus/:id
+// PUT /api/menu/:id
 const updateMenu = async (req, res) => {
   try {
     const updates = { ...req.body };
-    delete updates.menuId; // prevent id override
+    delete updates.menuId; // prevent id change
 
-    const updated = await Menu.findOneAndUpdate(
-      { menuId: req.params.id },
-      { $set: updates },
-      { new: true, runValidators: true }
-    );
-    if (!updated) return res.status(404).json({ message: 'Menu item not found' });
+    const updated = dbUpdateMenu(req.params.id, updates);
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Menu item not found' });
+    }
+
     res.json({ success: true, data: updated });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error in updateMenu:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // ── DELETE MENU ITEM ───────────────────────────────────────────────────────────
-// DELETE /api/menus/:id
+// DELETE /api/menu/:id
 const deleteMenu = async (req, res) => {
   try {
-    const menu = await Menu.findOneAndDelete({ menuId: req.params.id });
-    if (!menu) return res.status(404).json({ message: 'Menu item not found' });
+    const menu = getMenuById(req.params.id);
+    if (!menu) {
+      return res.status(404).json({ success: false, message: 'Menu item not found' });
+    }
+
+    const db = require('../utils/dbManager').readDB();
+    db.menus = db.menus.filter(m => String(m.menuId) !== String(req.params.id) && String(m.id) !== String(req.params.id));
+    require('../utils/dbManager').writeDB(db);
+
     res.json({ success: true, message: 'Menu item deleted' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error in deleteMenu:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

@@ -749,6 +749,41 @@
       ],
       "role": "Customer",
       "createdAt": "2025-12-01T08:00:00.000Z"
+    },
+    {
+      "id": "usr_bb0121f6",
+      "username": "nrupal_wakode",
+      "email": "nrupal.wakode4@example.com",
+      "phoneNo": "919423680078",
+      "password": "nrupal@123",
+      "address": [
+        {
+          "street": "604 Indiranagar",
+          "city": "Chennai"
+        }
+      ],
+      "role": "Owner",
+      "createdAt": "2026-04-10T02:46:15.923Z"
+    },
+    {
+      "id": "usr_cd8b25f2",
+      "username": "nrupal",
+      "email": "nrupalwakode710@gmail.com",
+      "phoneNo": "8767977304",
+      "password": "nrupal123",
+      "address": [],
+      "role": "Customer",
+      "createdAt": "2026-04-10T02:55:01.363Z"
+    },
+    {
+      "id": "usr_b24346c4",
+      "username": "nrupal_567",
+      "email": "nrupalwakode777@gmail.com",
+      "phoneNo": "7436894568",
+      "password": "nrupal123",
+      "address": [],
+      "role": "Customer",
+      "createdAt": "2026-04-10T02:56:13.587Z"
     }
   ],
   "restaurants": [
@@ -780,7 +815,7 @@
         "Indian"
       ],
       "isVeg": false,
-      "rating": 4.0,
+      "rating": 4,
       "gstinNo": "27ABCDE8630Z5F1",
       "imageUrl": "https://source.unsplash.com/featured/?restaurant,ocean"
     },
@@ -940,7 +975,7 @@
         "Chinese"
       ],
       "isVeg": true,
-      "rating": 4.0,
+      "rating": 4,
       "gstinNo": "27ABCDE3819Z5F1",
       "imageUrl": "https://source.unsplash.com/featured/?restaurant,garden"
     },
@@ -1004,7 +1039,7 @@
         "Indian"
       ],
       "isVeg": true,
-      "rating": 4.0,
+      "rating": 4,
       "gstinNo": "27ABCDE5357Z5F1",
       "imageUrl": "https://source.unsplash.com/featured/?restaurant,route"
     },
@@ -1036,7 +1071,7 @@
         "FastFood"
       ],
       "isVeg": true,
-      "rating": 4.0,
+      "rating": 4,
       "gstinNo": "27ABCDE6102Z5F1",
       "imageUrl": "https://source.unsplash.com/featured/?restaurant,pizza"
     },
@@ -1140,7 +1175,7 @@
       "itemName": "Sushi Roll",
       "price": 470.71,
       "category": "Continental",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": false,
       "description": "Sushi Roll served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -1164,7 +1199,7 @@
       "itemName": "Chole Bhature",
       "price": 293.05,
       "category": "Indian",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Chole Bhature served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -1200,7 +1235,7 @@
       "itemName": "Sushi Roll",
       "price": 475.91,
       "category": "Continental",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": false,
       "description": "Sushi Roll served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -1308,7 +1343,7 @@
       "itemName": "Hyderabadi Biryani",
       "price": 336.92,
       "category": "Indian",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": false,
       "description": "Hyderabadi Biryani served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -1380,7 +1415,7 @@
       "itemName": "Gulab Jamun",
       "price": 356.54,
       "category": "Indian",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Gulab Jamun served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -1464,7 +1499,7 @@
       "itemName": "Chicken Biryani",
       "price": 455.84,
       "category": "Indian",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Chicken Biryani served hot with authentic spices and sauces.",
       "isVeg": false,
@@ -1500,7 +1535,7 @@
       "itemName": "Paneer Tikka",
       "price": 326.87,
       "category": "Indian",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Paneer Tikka served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -1524,7 +1559,7 @@
       "itemName": "Chole Bhature",
       "price": 622.23,
       "category": "Indian",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Chole Bhature served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -1534,7 +1569,7 @@
       "menuId": "menu_039",
       "restaurantId": "rest_015",
       "itemName": "Fish Curry",
-      "price": 430.0,
+      "price": 430,
       "category": "Indian",
       "rating": 4.1,
       "isAvailable": true,
@@ -1548,7 +1583,7 @@
       "itemName": "Paneer Tikka",
       "price": 588.47,
       "category": "Indian",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Paneer Tikka served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -2184,7 +2219,7 @@
       "itemName": "Chole Bhature",
       "price": 340.05,
       "category": "Indian",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Chole Bhature served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -2196,7 +2231,7 @@
       "itemName": "Chicken Shawarma",
       "price": 275.71,
       "category": "FastFood",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Chicken Shawarma served hot with authentic spices and sauces.",
       "isVeg": false,
@@ -2232,7 +2267,7 @@
       "itemName": "Chicken Biryani",
       "price": 741.57,
       "category": "Indian",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Chicken Biryani served hot with authentic spices and sauces.",
       "isVeg": false,
@@ -2340,7 +2375,7 @@
       "itemName": "Paneer Tikka",
       "price": 321.05,
       "category": "Indian",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Paneer Tikka served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -2374,7 +2409,7 @@
       "menuId": "menu_109",
       "restaurantId": "rest_017",
       "itemName": "Gulab Jamun",
-      "price": 585.0,
+      "price": 585,
       "category": "Indian",
       "rating": 4.3,
       "isAvailable": false,
@@ -2496,7 +2531,7 @@
       "itemName": "Sushi Roll",
       "price": 148.48,
       "category": "Continental",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Sushi Roll served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -2676,7 +2711,7 @@
       "itemName": "American Sandwich",
       "price": 742.5,
       "category": "FastFood",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "American Sandwich served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -2832,7 +2867,7 @@
       "itemName": "Momos",
       "price": 629.91,
       "category": "Chinese",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Momos served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -2868,7 +2903,7 @@
       "itemName": "American Sandwich",
       "price": 641.8,
       "category": "FastFood",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": false,
       "description": "American Sandwich served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -2988,7 +3023,7 @@
       "itemName": "Chicken Shawarma",
       "price": 437.26,
       "category": "FastFood",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Chicken Shawarma served hot with authentic spices and sauces.",
       "isVeg": false,
@@ -3132,7 +3167,7 @@
       "itemName": "Chicken Shawarma",
       "price": 557.27,
       "category": "FastFood",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Chicken Shawarma served hot with authentic spices and sauces.",
       "isVeg": false,
@@ -3192,7 +3227,7 @@
       "itemName": "Paneer Tikka",
       "price": 707.23,
       "category": "Indian",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Paneer Tikka served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -3372,7 +3407,7 @@
       "itemName": "Veg Burger",
       "price": 594.11,
       "category": "FastFood",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": false,
       "description": "Veg Burger served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -3420,7 +3455,7 @@
       "itemName": "Veg Thali",
       "price": 759.01,
       "category": "Indian",
-      "rating": 4.0,
+      "rating": 4,
       "isAvailable": true,
       "description": "Veg Thali served hot with authentic spices and sauces.",
       "isVeg": true,
@@ -4777,7 +4812,7 @@
         {
           "itemId": "menu_109",
           "quantity": 3,
-          "price": 585.0
+          "price": 585
         },
         {
           "itemId": "menu_165",
@@ -4988,7 +5023,7 @@
         {
           "itemId": "menu_109",
           "quantity": 2,
-          "price": 585.0
+          "price": 585
         },
         {
           "itemId": "menu_046",
@@ -5214,7 +5249,7 @@
         {
           "itemId": "menu_109",
           "quantity": 3,
-          "price": 585.0
+          "price": 585
         }
       ],
       "totalAmount": 4152.08,
@@ -5605,7 +5640,7 @@
         {
           "itemId": "menu_109",
           "quantity": 1,
-          "price": 585.0
+          "price": 585
         },
         {
           "itemId": "menu_156",
@@ -5613,7 +5648,7 @@
           "price": 235.32
         }
       ],
-      "totalAmount": 2262.0,
+      "totalAmount": 2262,
       "status": "Pending",
       "date": "2025-11-22T12:00:00.000Z",
       "deliveryAgentId": "agent_050"
@@ -7375,7 +7410,7 @@
         {
           "itemId": "menu_039",
           "quantity": 3,
-          "price": 430.0
+          "price": 430
         },
         {
           "itemId": "menu_139",
@@ -8785,7 +8820,7 @@
         {
           "itemId": "menu_039",
           "quantity": 2,
-          "price": 430.0
+          "price": 430
         },
         {
           "itemId": "menu_008",

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
+import { CanActivate, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 @Injectable({
@@ -12,20 +12,34 @@ export class AuthGuard implements CanActivate {
     private router: Router
   ) {}
 
-  canActivate(): boolean {
-    // JWT DISABLED FOR NOW - check for user in localStorage instead
-    // const token = this.authService.getToken();
-    // if (!token) {
-    //   this.router.navigate(['/auth/login']);
-    //   return false;
-    // }
+  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
+    console.log('[AuthGuard] Checking access to:', state.url);
     
-    // Check if user exists in localStorage
-    const user = this.authService.getCurrentUserValue();
+    // Check user in BehaviorSubject value
+    let user = this.authService.getCurrentUserValue();
+    
+    // Fallback: if BehaviorSubject is empty, check localStorage directly
     if (!user) {
+      const userJson = localStorage.getItem('user');
+      if (userJson) {
+        try {
+          user = JSON.parse(userJson);
+          if (user) {
+            console.log('[AuthGuard] Found user in localStorage, syncing:', user.username);
+          }
+        } catch (e) {
+          console.error('[AuthGuard] Failed to parse localStorage user:', e);
+        }
+      }
+    }
+    
+    if (!user) {
+      console.log('[AuthGuard] No user found. Redirecting to login.');
       this.router.navigate(['/auth/login']);
       return false;
     }
+    
+    console.log('[AuthGuard] User authenticated:', user.username, '- Allowing access');
     return true;
   }
 }

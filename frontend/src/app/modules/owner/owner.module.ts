@@ -6,12 +6,14 @@ import { OwnerRoutingModule } from './owner-routing.module';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { AddMenuComponent } from './add-menu/add-menu.component';
 import { ManageOrdersComponent } from './manage-orders/manage-orders.component';
+import { OwnerProfileComponent } from './profile/profile.component';
 
 @NgModule({
   declarations: [
     DashboardComponent,
     AddMenuComponent,
-    ManageOrdersComponent
+    ManageOrdersComponent,
+    OwnerProfileComponent
   ],
   imports: [
     CommonModule,

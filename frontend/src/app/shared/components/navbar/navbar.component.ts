@@ -18,14 +18,26 @@ export class NavbarComponent implements OnInit {
     private authService: AuthService,
     private cartService: CartService,
     private router: Router
-  ) { }
+  ) {
+    // Initialize from localStorage immediately to avoid timing issues
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      this.currentUser = JSON.parse(storedUser);
+      this.isLoggedIn = true;
+      console.log('[NavbarComponent] Initialized from localStorage:', this.currentUser.username);
+    }
+  }
 
   ngOnInit(): void {
+    console.log('[NavbarComponent] ngOnInit called');
+    
     this.authService.isAuthenticated().subscribe(isAuth => {
+      console.log('[NavbarComponent] isAuthenticated changed to:', isAuth);
       this.isLoggedIn = isAuth;
     });
 
     this.authService.getCurrentUser().subscribe(user => {
+      console.log('[NavbarComponent] currentUser changed to:', user?.username || 'null');
       this.currentUser = user;
     });
 
@@ -35,13 +47,32 @@ export class NavbarComponent implements OnInit {
   }
 
   logout(): void {
+    console.log('[NavbarComponent] Logout clicked');
     this.authService.logout();
-    this.router.navigate(['/auth/login']);
+  }
+
+  getProfileLink(): string {
+    if (!this.isLoggedIn || !this.currentUser) {
+      console.warn('[NavbarComponent] getProfileLink called but not logged in');
+      return '/auth/login';
+    }
+
+    switch (this.currentUser.role) {
+      case 'Customer':
+        return '/user/profile';
+      case 'Owner':
+        return '/owner/profile';
+      case 'DeliveryAgent':
+        return '/delivery/profile';
+      default:
+        return '/auth/login';
+    }
   }
 
   getHomeLink(): string {
     if (!this.isLoggedIn || !this.currentUser) {
-      return '/login';
+      console.warn('[NavbarComponent] getHomeLink called but not logged in');
+      return '/auth/login';
     }
 
     switch (this.currentUser.role) {
@@ -52,8 +83,7 @@ export class NavbarComponent implements OnInit {
       case 'DeliveryAgent':
         return '/delivery/dashboard';
       default:
-        return '/login';
+        return '/auth/login';
     }
   }
-
 }

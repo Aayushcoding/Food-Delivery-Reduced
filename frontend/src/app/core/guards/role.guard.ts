@@ -13,14 +13,20 @@ export class RoleGuard implements CanActivate {
   ) {}
 
   canActivate(route: ActivatedRouteSnapshot): boolean {
+    console.log('[RoleGuard] Checking role for route:', route.url);
     const user = this.authService.getCurrentUserValue();
+    
     if (!user) {
+      console.log('[RoleGuard] No user found. Redirecting to login.');
       this.router.navigate(['/login']);
       return false;
     }
 
     const expectedRoles = route.data['roles'] as string[];
+    console.log('[RoleGuard] User role:', user.role, '- Expected roles:', expectedRoles);
+    
     if (expectedRoles && !expectedRoles.includes(user.role)) {
+      console.log('[RoleGuard] Role mismatch! Redirecting to appropriate dashboard.');
       // Redirect to appropriate dashboard based on user's actual role
       switch (user.role) {
         case 'Customer':
@@ -38,6 +44,7 @@ export class RoleGuard implements CanActivate {
       return false;
     }
 
+    console.log('[RoleGuard] Role check passed. Allowing access.');
     return true;
   }
 }

@@ -86,7 +86,7 @@
           <span class="d-none d-md-inline">{{currentUser.username}}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-          <li><a class="dropdown-item" routerLink="/user/profile"><i class="fas fa-user me-2"></i>Profile</a></li>
+          <li><a class="dropdown-item" [routerLink]="getProfileLink()"><i class="fas fa-user me-2"></i>Profile</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><button class="dropdown-item text-danger" (click)="logout()"><i class="fas fa-sign-out-alt me-2"></i>Logout</button></li>
         </ul>

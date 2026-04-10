@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { AddMenuComponent } from './add-menu/add-menu.component';
 import { ManageOrdersComponent } from './manage-orders/manage-orders.component';
+import { OwnerProfileComponent } from './profile/profile.component';
 
 const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent },
@@ -10,6 +11,7 @@ const routes: Routes = [
   { path: 'menu/add', component: AddMenuComponent },
   { path: 'manage-orders', component: ManageOrdersComponent },
   { path: 'orders', component: ManageOrdersComponent },
+  { path: 'profile', component: OwnerProfileComponent },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
 ];
 

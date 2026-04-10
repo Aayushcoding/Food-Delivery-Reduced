@@ -1,166 +1,169 @@
 // controllers/userController.js
-// Fields: id, username, email, phoneNo, password, address[{street,city}], role, createdAt
-// String query: User.findOne({ id: value }) — NO findById(), NO populate()
+// ✅ Using MongoDB with Mongoose
+// ✅ Passwords hashed with bcrypt
 
 const bcrypt = require('bcryptjs');
-// JWT disabled for now (can be re-enabled later)
-// const jwt = require('jsonwebtoken');
-const { v4: uuidv4 } = require('uuid');
-const User   = require('../models/User');
-const { successResponse, errorResponse } = require('../utils/responseFormatter');
-const { isValidEmail, isValidPhone, validateRequiredFields } = require('../utils/validators');
+const User = require('../models/User');
 
 // ── GET ALL USERS ──────────────────────────────────────────────────────────────
-// GET /api/users?role=Customer&search=amit&page=1&limit=10
+// GET /api/users?role=Customer&search=amit
 const getUsers = async (req, res) => {
   try {
-    const { role, search, page = 1, limit = 10 } = req.query;
-    const filter = {};
+    const { role, search } = req.query;
+    let query = {};
 
-    if (role)   filter.role = role;
+    // Filter by role if provided
+    if (role) {
+      query.role = role;
+    }
+
+    // Filter by search if provided
     if (search) {
-      filter.$or = [
-        { username: { $regex: search, $options: 'i' } },
-        { email:    { $regex: search, $options: 'i' } }
+      const searchLower = String(search).toLowerCase();
+      query.$or = [
+        { username: new RegExp(searchLower, 'i') },
+        { email: new RegExp(searchLower, 'i') }
       ];
     }
 
-    const skip  = (parseInt(page) - 1) * parseInt(limit);
-    const total = await User.countDocuments(filter);
-    const users = await User.find(filter)
-      .select('-password')
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    res.json({ success: true, total, page: parseInt(page), data: users });
+    const users = await User.find(query).select('-password');
+    console.log(`✅ GET /api/users - Found ${users.length} users`);
+    
+    res.json({ success: true, total: users.length, data: users });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('❌ Error in getUsers:', error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // ── GET SINGLE USER ────────────────────────────────────────────────────────────
-// GET /api/users/:id  (id = "usr_001")
+// GET /api/users/:id
 const getUser = async (req, res) => {
   try {
-    // String-based query — DO NOT use findById()
     const user = await User.findOne({ id: req.params.id }).select('-password');
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    
+    if (!user) {
+      console.warn(`⚠️  User not found: ${req.params.id}`);
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    console.log(`✅ GET /api/users/${req.params.id} - Found user`);
+    res.json({ success: true, data: user });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('❌ Error in getUser:', error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // ── REGISTER / CREATE USER ─────────────────────────────────────────────────────
-// POST /api/users/register
-// Body: { id?, username, email, phoneNo, password, role, address[{street,city}] }
+// POST /api/users
 const createUser = async (req, res) => {
   try {
     const { id, username, email, phoneNo, password, role, address } = req.body;
 
-    const validation = validateRequiredFields(req.body, ['username', 'email', 'phoneNo', 'password', 'role']);
-    if (!validation.isValid) {
-      return errorResponse(res, validation.errors, 400);
+    // Validate required fields
+    if (!id || !username || !email || !phoneNo || !password || !role) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Required fields: id, username, email, phoneNo, password, role' 
+      });
     }
 
-    if (!isValidEmail(email)) {
-      return errorResponse(res, 'Invalid email format', 400);
-    }
-
-    if (!isValidPhone(phoneNo)) {
-      return errorResponse(res, 'Phone number must be 10-15 digits', 400);
-    }
-
-    const normalizedPhone = String(phoneNo).replace(/\D/g, '');
-    const emailLower = String(email).trim().toLowerCase();
-
+    // Validate role
     const allowedRoles = ['Customer', 'Owner'];
     if (!allowedRoles.includes(role)) {
-      return errorResponse(res, 'Invalid role. Use Customer or Owner.', 400);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid role. Use Customer or Owner.' 
+      });
     }
 
-    const existing = await User.findOne({ email: emailLower });
-    if (existing) {
-      return errorResponse(res, 'Email already exists', 400);
+    // Check if email already exists
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ success: false, message: 'Email already exists' });
     }
 
+    // Check if username exists
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(400).json({ success: false, message: 'Username already exists' });
+    }
+
+    // Check if id already exists
+    const existingId = await User.findOne({ id });
+    if (existingId) {
+      return res.status(400).json({ success: false, message: 'User ID already exists' });
+    }
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new User({
-      id:       id || `usr_${uuidv4().slice(0, 8)}`,
+    // Create new user
+    const newUser = await User.create({
+      id: String(id),
       username: String(username).trim(),
-      email:    emailLower,
-      phoneNo:  normalizedPhone,
+      email: String(email).trim().toLowerCase(),
+      phoneNo: String(phoneNo),
       password: hashedPassword,
-      address:  address || [],
-      role
+      role,
+      address: address || []
     });
 
-    const saved = await user.save();
-    const result = saved.toObject();
-    delete result.password;
+    console.log(`✅ POST /api/users - User created: ${newUser.id}`);
 
-    // JWT disabled for now (can be re-enabled later)
-    // const token = jwt.sign(
-    //   { userId: saved.id, role: saved.role },
-    //   process.env.JWT_SECRET || 'fooddelivery_secret_key_2024',
-    //   { expiresIn: '24h' }
-    // );
-
-    successResponse(res, result, 'User registered successfully', 201);
+    // Return user without password
+    const userWithoutPass = await User.findOne({ id: newUser.id }).select('-password');
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      data: userWithoutPass
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('❌ Error in createUser:', error.message);
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
 // ── LOGIN USER ─────────────────────────────────────────────────────────────────
 // POST /api/users/login
-// Body: { email, password, role }
 const loginUser = async (req, res) => {
   try {
     const { email, password, role } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'email and password are required' });
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    const emailNorm = String(email).trim().toLowerCase();
-    const user = await User.findOne({ email: emailNorm });
+    // Find user by email
+    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: 'Invalid email or password' });
+      return res.status(400).json({ success: false, message: 'Invalid email or password' });
     }
 
-    // Optional role check — only enforce if role is provided in body
+    // Optional role check
     if (role && user.role !== role) {
-      return res.status(403).json({ message: `Access denied. This account has role: ${user.role}` });
+      return res.status(403).json({ success: false, message: `Access denied. Your role is: ${user.role}` });
     }
 
-    // Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid email or password' });
+    // Compare password with hash
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ success: false, message: 'Invalid email or password' });
     }
 
-    // JWT disabled for now (can be re-enabled later)
-    // const token = jwt.sign(
-    //   { id: user.id, role: user.role },
-    //   process.env.JWT_SECRET || 'fooddelivery_secret_key_2024',
-    //   { expiresIn: '24h' }
-    // );
+    console.log(`✅ POST /api/users/login - Login successful for user: ${user.id}`);
 
+    // Return user without password
+    const userWithoutPass = await User.findOne({ email }).select('-password');
     res.json({
       success: true,
-      user: {
-        id:       user.id,
-        username: user.username,
-        email:    user.email,
-        phoneNo:  user.phoneNo,
-        role:     user.role,
-        address:  user.address
-      }
+      message: 'Login successful',
+      user: userWithoutPass
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('❌ Error in loginUser:', error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -168,26 +171,29 @@ const loginUser = async (req, res) => {
 // PUT /api/users/:id
 const updateUser = async (req, res) => {
   try {
+    const userId = req.params.id;
     const updates = { ...req.body };
 
-    // Never allow id override
+    // Never allow id, password, or createdAt override
     delete updates.id;
+    delete updates.password;
+    delete updates.createdAt;
 
-    // Hash new password if provided
-    if (updates.password) {
-      updates.password = await bcrypt.hash(updates.password, 10);
-    }
-
-    const updated = await User.findOneAndUpdate(
-      { id: req.params.id },
-      { $set: updates },
-      { new: true, runValidators: true }
+    const user = await User.findOneAndUpdate(
+      { id: userId },
+      updates,
+      { new: true }
     ).select('-password');
 
-    if (!updated) return res.status(404).json({ message: 'User not found' });
-    res.json({ success: true, data: updated });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    console.log(`✅ PUT /api/users/${userId} - User updated`);
+    res.json({ success: true, message: 'User updated', data: user });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('❌ Error in updateUser:', error.message);
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
@@ -195,11 +201,18 @@ const updateUser = async (req, res) => {
 // DELETE /api/users/:id
 const deleteUser = async (req, res) => {
   try {
-    const user = await User.findOneAndDelete({ id: req.params.id });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const userId = req.params.id;
+    const user = await User.findOneAndDelete({ id: userId });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    console.log(`✅ DELETE /api/users/${userId} - User deleted`);
     res.json({ success: true, message: 'User deleted' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('❌ Error in deleteUser:', error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

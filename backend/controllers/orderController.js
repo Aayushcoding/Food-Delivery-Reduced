@@ -1,220 +1,227 @@
 // controllers/orderController.js
-// Fields: orderId, userId, restaurantId, items[{itemId,quantity,price}],
-//         totalAmount, status, date, deliveryAgentId
-// String query: Order.findOne({ orderId: value }) — NO findById(), NO populate()
+// Using db.json for data persistence (NO MongoDB)
 
-const Order         = require('../models/Order');
-const Cart          = require('../models/Cart');
-const User          = require('../models/User');
-const DeliveryAgent = require('../models/DeliveryAgent');
-const Restaurant    = require('../models/Restaurant');
+const { getAllOrders, getOrderById, getOrdersByUserId, getOrdersByRestaurantId, addOrder, updateOrder: dbUpdateOrder, getRestaurantsByOwner, getAllCarts, getCartByUserId, updateCart: dbUpdateCart, findUserById, getAvailableDeliveryAgents, updateDeliveryAgent } = require('../utils/dbManager');
 
 // ── GET ALL ORDERS ─────────────────────────────────────────────────────────────
-// GET /api/orders?userId=usr_001&ownerId=usr_owner_001&restaurantId=rest_001
-//                &status=Pending&deliveryAgentId=agent_001
-//                &page=1&limit=10&sortBy=totalAmount&order=desc
+// GET /api/orders?userId=usr_001&ownerId=usr_owner_001&restaurantId=rest_001&status=Pending
 const getOrders = async (req, res) => {
   try {
     const {
       userId, restaurantId, ownerId, status, deliveryAgentId,
-      page = 1, limit = 10, sortBy = 'date', order = 'desc'
+      page = 1, limit = 10, sortBy = 'createdAt', order = 'desc'
     } = req.query;
 
-    const filter = {};
-    if (userId)          filter.userId          = userId;
-    if (status)          filter.status          = status;
-    if (deliveryAgentId) filter.deliveryAgentId = deliveryAgentId;
+    let orders = getAllOrders();
 
-    if (ownerId) {
-      const owned = await Restaurant.find({ ownerId });
-      const ids   = owned.map((r) => r.restaurantId);
-      if (ids.length === 0) {
-        return res.json({
-          success: true,
-          total:   0,
-          page:    parseInt(page),
-          data:    []
-        });
-      }
-      filter.restaurantId = { $in: ids };
-    } else if (restaurantId) {
-      filter.restaurantId = restaurantId;
+    // Apply filters
+    if (userId) {
+      orders = orders.filter(o => String(o.userId) === String(userId));
     }
 
+    if (status) {
+      orders = orders.filter(o => o.status === status);
+    }
+
+    if (deliveryAgentId) {
+      orders = orders.filter(o => String(o.deliveryAgentId) === String(deliveryAgentId));
+    }
+
+    if (ownerId) {
+      const owned = getRestaurantsByOwner(ownerId);
+      const ids = owned.map(r => String(r.id));
+      if (ids.length === 0) {
+        return res.json({ success: true, total: 0, page: parseInt(page), limit: parseInt(limit), data: [] });
+      }
+      orders = orders.filter(o => ids.includes(String(o.restaurantId)));
+    } else if (restaurantId) {
+      orders = orders.filter(o => String(o.restaurantId) === String(restaurantId));
+    }
+
+    // Apply sorting
     const sortOrder = order === 'desc' ? -1 : 1;
-    const skip      = (parseInt(page) - 1) * parseInt(limit);
-    const total     = await Order.countDocuments(filter);
+    orders.sort((a, b) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
 
-    const orders = await Order.find(filter)
-      .sort({ [sortBy]: sortOrder })
-      .skip(skip)
-      .limit(parseInt(limit));
+      if (sortBy === 'totalAmount') {
+        aVal = parseFloat(aVal) || 0;
+        bVal = parseFloat(bVal) || 0;
+      }
 
-    res.json({ success: true, total, page: parseInt(page), data: orders });
+      if (aVal < bVal) return -1 * sortOrder;
+      if (aVal > bVal) return 1 * sortOrder;
+      return 0;
+    });
+
+    // Apply pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+    const total = orders.length;
+
+    const paginatedOrders = orders.slice(skip, skip + limitNum);
+
+    res.json({ success: true, total, page: pageNum, limit: limitNum, data: paginatedOrders });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error in getOrders:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // ── GET SINGLE ORDER ───────────────────────────────────────────────────────────
-// GET /api/orders/:id   (id = "order_001")
+// GET /api/orders/:id
 const getOrder = async (req, res) => {
   try {
-    // String-based query — DO NOT use findById()
-    const order = await Order.findOne({ orderId: req.params.id });
-    if (!order) return res.status(404).json({ message: 'Order not found' });
-    res.json(order);
+    const order = getOrderById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+    res.json({ success: true, data: order });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error in getOrder:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // ── CREATE ORDER (direct) ──────────────────────────────────────────────────────
 // POST /api/orders
-// Body: { orderId?, userId, restaurantId, items[{itemId,quantity,price}], deliveryAgentId?, status? }
 const createOrder = async (req, res) => {
   try {
     const { userId, restaurantId, items, deliveryAgentId } = req.body;
 
     if (!userId || !restaurantId || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: 'userId, restaurantId and items[] are required' });
+      return res.status(400).json({ success: false, message: 'userId, restaurantId and items[] are required' });
     }
 
-    const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const totalAmount = items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0);
 
-    // Auto-generate orderId if not provided
-    const count   = await Order.countDocuments();
-    const orderId = req.body.orderId || `order_${String(count + 1).padStart(3, '0')}`;
-
-    const order = new Order({
-      orderId,
+    const newOrder = addOrder({
+      orderId: req.body.orderId || `order_${Date.now()}`,
       userId,
       restaurantId,
       items,
       totalAmount,
-      status:          req.body.status || 'Pending',
-      date:            req.body.date   || new Date(),
-      deliveryAgentId: deliveryAgentId || null
+      status: req.body.status || 'Pending',
+      deliveryAgentId: deliveryAgentId || null,
+      date: new Date().toISOString()
     });
 
-    const saved = await order.save();
-    res.status(201).json({ success: true, data: saved });
+    if (!newOrder) {
+      return res.status(500).json({ success: false, message: 'Failed to create order' });
+    }
+
+    res.status(201).json({ success: true, data: newOrder });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error in createOrder:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // ── PLACE ORDER FROM CART ──────────────────────────────────────────────────────
-// POST /api/orders/place
-// Body: { cartId, deliveryAgentId? }
-// Automatically assigns an available agent if none provided
+// POST /api/orders/place-from-cart
 const placeOrderFromCart = async (req, res) => {
   try {
     const { cartId, deliveryAgentId } = req.body;
 
-    if (!cartId) return res.status(400).json({ message: 'cartId is required' });
+    if (!cartId) {
+      return res.status(400).json({ success: false, message: 'cartId is required' });
+    }
 
-    // Fetch cart from database
-    const cart = await Cart.findOne({ id: cartId });
-    if (!cart) return res.status(404).json({ message: 'Cart not found' });
+    // Fetch cart
+    const allCarts = getAllCarts();
+    const cart = allCarts.find(c => String(c.id) === String(cartId));
+    if (!cart) {
+      return res.status(404).json({ success: false, message: 'Cart not found' });
+    }
 
-    // TODO: Replace cart.userId with req.user.id after JWT integration
-    // if (req.user.id !== cart.userId) {
-    //   return res.status(403).json({ message: 'Unauthorized' });
-    // }
-    if (cart.items.length === 0) return res.status(400).json({ message: 'Cart is empty' });
+    if (cart.items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Cart is empty' });
+    }
 
     // Verify user exists
-    const user = await User.findOne({ id: cart.userId });
-    if (!user) return res.status(404).json({ message: `User '${cart.userId}' not found` });
+    if (!findUserById(cart.userId)) {
+      return res.status(404).json({ success: false, message: `User '${cart.userId}' not found` });
+    }
 
     // Resolve delivery agent
     let assignedAgentId = deliveryAgentId || null;
     if (!assignedAgentId) {
       // Auto-assign first available agent
-      const agent = await DeliveryAgent.findOne({ isAvailable: true });
-      if (agent) {
+      const agents = getAvailableDeliveryAgents();
+      if (agents.length > 0) {
+        const agent = agents[0];
         assignedAgentId = agent.id;
         // Mark agent as unavailable
-        await DeliveryAgent.findOneAndUpdate({ id: agent.id }, { $set: { isAvailable: false } });
+        updateDeliveryAgent(agent.id, { available: false });
       }
-    } else {
-      // Validate provided agent
-      const agent = await DeliveryAgent.findOne({ id: assignedAgentId });
-      if (!agent) return res.status(404).json({ message: `Delivery agent '${assignedAgentId}' not found` });
     }
 
-    // Build order items from cart (includes price from cart)
-    const orderItems = cart.items.map((item) => ({
-      itemId:   item.itemId,
+    // Build order items from cart
+    const orderItems = cart.items.map(item => ({
+      itemId: item.itemId,
       quantity: item.quantity,
-      price:    item.price
+      price: item.price
     }));
 
-    const count   = await Order.countDocuments();
-    const orderId = `order_${String(count + 1).padStart(3, '0')}`;
-
-    const order = new Order({
-      orderId,
-      userId:          cart.userId,
-      restaurantId:    cart.restaurantId,
-      items:           orderItems,
-      totalAmount:     cart.totalAmount,
-      status:          'Pending',
-      date:            new Date(),
-      deliveryAgentId: assignedAgentId
+    const newOrder = addOrder({
+      orderId: `order_${Date.now()}`,
+      userId: cart.userId,
+      restaurantId: cart.restaurantId,
+      items: orderItems,
+      totalAmount: cart.totalAmount,
+      status: 'Pending',
+      deliveryAgentId: assignedAgentId,
+      date: new Date().toISOString()
     });
 
-    await order.save();
+    if (!newOrder) {
+      return res.status(500).json({ success: false, message: 'Failed to place order' });
+    }
 
     // Clear the cart after placing order
-    cart.items       = [];
-    cart.totalAmount = 0;
-    await cart.save();
+    dbUpdateCart(cartId, { items: [], totalAmount: 0 });
 
     const message = assignedAgentId
       ? 'Order placed successfully'
       : 'Order placed successfully, but no delivery agent available - pending assignment';
 
-    res.status(201).json({ success: true, message, data: order });
+    res.status(201).json({ success: true, message, data: newOrder });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error in placeOrderFromCart:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // ── UPDATE ORDER ───────────────────────────────────────────────────────────────
 // PUT /api/orders/:id
-// Allows updating status, deliveryAgentId, etc.
 const updateOrder = async (req, res) => {
   try {
     const updates = { ...req.body };
-    delete updates.orderId; // prevent id override
+    delete updates.id; // prevent id change
 
     const validStatuses = ['Pending', 'Confirmed', 'Preparing', 'Out for Delivery', 'Delivered', 'Cancelled'];
     if (updates.status && !validStatuses.includes(updates.status)) {
       return res.status(400).json({
+        success: false,
         message: `Invalid status. Valid values: ${validStatuses.join(', ')}`
       });
     }
 
-    const updated = await Order.findOneAndUpdate(
-      { orderId: req.params.id },
-      { $set: updates },
-      { new: true, runValidators: true }
-    );
-    if (!updated) return res.status(404).json({ message: 'Order not found' });
+    const updated = dbUpdateOrder(req.params.id, updates);
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
 
     // If order is Delivered, free up the delivery agent
     if (updates.status === 'Delivered' && updated.deliveryAgentId) {
-      await DeliveryAgent.findOneAndUpdate(
-        { id: updated.deliveryAgentId },
-        { $set: { isAvailable: true } }
-      );
+      updateDeliveryAgent(updated.deliveryAgentId, { available: true });
     }
 
     res.json({ success: true, data: updated });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error in updateOrder:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -222,20 +229,24 @@ const updateOrder = async (req, res) => {
 // DELETE /api/orders/:id
 const deleteOrder = async (req, res) => {
   try {
-    const order = await Order.findOneAndDelete({ orderId: req.params.id });
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    const order = getOrderById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
 
     // Free up delivery agent if order had one
     if (order.deliveryAgentId) {
-      await DeliveryAgent.findOneAndUpdate(
-        { id: order.deliveryAgentId },
-        { $set: { isAvailable: true } }
-      );
+      updateDeliveryAgent(order.deliveryAgentId, { available: true });
     }
+
+    const db = require('../utils/dbManager').readDB();
+    db.orders = db.orders.filter(o => String(o.id) !== String(req.params.id));
+    require('../utils/dbManager').writeDB(db);
 
     res.json({ success: true, message: 'Order deleted' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error in deleteOrder:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
