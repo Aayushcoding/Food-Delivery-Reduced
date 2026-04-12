@@ -2,9 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { CustomerService } from '../../core/services/customer.service';
-import { MenuService } from '../../core/services/menu.service';
-import { forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-orders',
@@ -25,7 +22,6 @@ export class OrdersComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private customerService: CustomerService,
-    private menuService: MenuService,
     private router: Router
   ) {}
 
@@ -51,35 +47,16 @@ export class OrdersComponent implements OnInit {
       next: (res) => {
         const rawOrders: any[] = res.success ? (res.data || []) : [];
 
-        if (rawOrders.length === 0) {
-          this.orders = [];
-          this.loading = false;
-          return;
-        }
+        // Order items now have 'name' stored directly by backend — no extra API calls needed
+        this.orders = rawOrders.map(order => ({
+          ...order,
+          enrichedItems: (order.items || []).map((item: any) => ({
+            ...item,
+            itemName: item.name || item.itemId   // 'name' is always set by backend
+          }))
+        }));
 
-        // Enrich each order's items with real menu item names
-        const enriched$ = rawOrders.map(order => {
-          if (!order.items || order.items.length === 0) {
-            return of({ ...order, enrichedItems: [] });
-          }
-          const itemLookups = order.items.map((item: any) =>
-            this.menuService.getMenuItem(item.itemId).pipe(
-              map(r => ({ ...item, itemName: r?.data?.itemName || item.itemId })),
-              catchError(() => of({ ...item, itemName: item.itemId }))
-            )
-          );
-          return forkJoin(itemLookups).pipe(
-            map(enrichedItems => ({ ...order, enrichedItems }))
-          );
-        });
-
-        forkJoin(enriched$).subscribe({
-          next: (result) => {
-            this.orders = result;
-            this.loading = false;
-          },
-          error: () => { this.orders = rawOrders; this.loading = false; }
-        });
+        this.loading = false;
       },
       error: () => { this.errorMessage = 'Failed to load orders.'; this.loading = false; }
     });

@@ -62,7 +62,7 @@
       <p class="order-items-title">Items ordered</p>
       <ul class="order-items-list">
         <li class="order-item-row" *ngFor="let item of order.items">
-          <span class="item-name">{{ item.itemId }}</span>
+          <span class="item-name">{{ item.name || item.itemName || item.itemId }}</span>
           <span class="item-qty">× {{ item.quantity }}</span>
           <span class="item-price">₹{{ (item.price * item.quantity) | number:'1.0-0' }}</span>
         </li>

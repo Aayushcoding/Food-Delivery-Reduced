@@ -3,9 +3,6 @@ import { Router } from '@angular/router';
 import { OrderService } from '../../core/services/order.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CustomerService } from '../../core/services/customer.service';
-import { MenuService } from '../../core/services/menu.service';
-import { forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
 
 @Component({
   selector:'app-customer-cart',
@@ -14,7 +11,7 @@ import { catchError, map } from 'rxjs/operators';
 })
 export class CustomerCartComponent implements OnInit {
 
-  cartItems: any[] = [];       // enriched: { itemId, quantity, price, itemName, restaurantId }
+  cartItems: any[] = [];       // { itemId, name, price, quantity, restaurantId }
   cartId: string = '';
   restaurantName: string = '';
   loading: boolean = false;
@@ -25,8 +22,7 @@ export class CustomerCartComponent implements OnInit {
     private router: Router,
     private orderService: OrderService,
     private authService: AuthService,
-    private customerService: CustomerService,
-    private menuService: MenuService
+    private customerService: CustomerService
   ) {}
 
   ngOnInit(): void {
@@ -45,45 +41,25 @@ export class CustomerCartComponent implements OnInit {
 
     this.customerService.getCart(user.id).subscribe({
       next: (res) => {
+        this.cartLoading = false;
         if (res.success && res.data) {
           this.cartId = res.data.id;
-          const rawItems: any[] = res.data.items || [];
 
-          if (rawItems.length === 0) {
-            this.cartLoading = false;
-            this.cartItems = [];
-            return;
+          // Backend now stores name directly in each cart item — no extra API calls needed
+          this.cartItems = (res.data.items || []).map((item: any) => ({
+            ...item,
+            itemName: item.name || item.itemId   // 'name' is set server-side
+          }));
+
+          // Fetch restaurant name once from the cart's restaurantId
+          if (res.data.restaurantId) {
+            this.customerService.getRestaurantById(res.data.restaurantId).subscribe({
+              next: r => { if (r.success) this.restaurantName = r.data.restaurantName; },
+              error: () => {}
+            });
           }
-
-          // Enrich items with itemName from menu API
-          const lookups = rawItems.map(item =>
-            this.menuService.getMenuItem(item.itemId).pipe(
-              map(menuRes => ({
-                ...item,
-                itemName: menuRes?.data?.itemName || item.itemId,
-                description: menuRes?.data?.description || '',
-                imageUrl: menuRes?.data?.imageUrl || ''
-              })),
-              catchError(() => of({ ...item, itemName: item.itemId }))
-            )
-          );
-
-          forkJoin(lookups).subscribe(enriched => {
-            this.cartItems = enriched;
-            this.cartLoading = false;
-
-            // Load restaurant name from first item
-            if (res.data.restaurantId) {
-              this.customerService.getRestaurantById(res.data.restaurantId).subscribe({
-                next: r => { if (r.success) this.restaurantName = r.data.restaurantName; },
-                error: () => {}
-              });
-            }
-          });
-
         } else {
           this.cartItems = [];
-          this.cartLoading = false;
         }
       },
       error: (err) => {
@@ -114,8 +90,7 @@ export class CustomerCartComponent implements OnInit {
     this.customerService.removeFromCart(this.cartId, item.itemId).subscribe({
       next: (res) => {
         if (res.success) {
-          // Re-load to sync with backend
-          this.loadCart();
+          this.loadCart(); // Re-sync with backend
         }
       },
       error: (err) => {
@@ -141,10 +116,8 @@ export class CustomerCartComponent implements OnInit {
     this.loading = true;
     this.errorMessage = '';
 
-    // Backend will use stored address or a default — we can optionally send one
-    const orderData = { userId: user.id };
-
-    this.orderService.createOrder(orderData).subscribe({
+    // Backend reads cart by userId — no need to send items
+    this.orderService.createOrder({ userId: user.id }).subscribe({
       next: (response) => {
         this.loading = false;
         if (response.success) {

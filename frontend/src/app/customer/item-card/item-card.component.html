@@ -1,4 +1,6 @@
 <div class="item-card">
+
+  <!-- IMAGE -->
   <div class="item-image">
     <img
       [src]="item.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=200&fit=crop'"
@@ -9,17 +11,31 @@
     <span class="nonveg-badge" *ngIf="!item.isVeg">🔴 Non-Veg</span>
   </div>
 
+  <!-- INFO -->
   <div class="item-info">
     <h3 class="item-name">{{ item.itemName }}</h3>
     <p class="item-category">{{ item.category }}</p>
-    <p class="item-description">{{ item.description }}</p>
+    <p class="item-description" *ngIf="item.description">{{ item.description }}</p>
 
     <div class="item-footer">
-      <div class="item-price-rating">
-        <span class="price">₹{{ item.price }}</span>
-        <span class="rating" *ngIf="item.rating">⭐ {{ item.rating }}</span>
+      <span class="price">₹{{ item.price }}</span>
+
+      <!-- Not in cart → show Add button -->
+      <button
+        *ngIf="quantity === 0"
+        class="btn-add"
+        (click)="increase.emit(item)"
+        [disabled]="inFlight">
+        {{ inFlight ? '...' : '+ Add' }}
+      </button>
+
+      <!-- In cart → show quantity controls -->
+      <div *ngIf="quantity > 0" class="qty-controls">
+        <button class="qty-btn minus" (click)="decrease.emit(item)" [disabled]="inFlight">−</button>
+        <span class="qty-value">{{ quantity }}</span>
+        <button class="qty-btn plus" (click)="increase.emit(item)" [disabled]="inFlight">+</button>
       </div>
-      <button class="btn-add" (click)="addToCart()">+ Add</button>
     </div>
   </div>
+
 </div>

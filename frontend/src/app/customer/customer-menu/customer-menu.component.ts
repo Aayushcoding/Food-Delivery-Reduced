@@ -105,7 +105,7 @@ export class CustomerMenuComponent implements OnInit {
     if (currentQty === 0) {
       // First add — POST add-item
       this.inFlight[item.menuId] = true;
-      this.customerService.addToCart(user.id, item.menuId, 1, item.price).subscribe({
+      this.customerService.addToCart(user.id, item.menuId, 1).subscribe({
         next: (res) => {
           this.inFlight[item.menuId] = false;
           if (res.success) {

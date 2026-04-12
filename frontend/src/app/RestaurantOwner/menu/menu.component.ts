@@ -54,7 +54,8 @@ export class MenuComponent implements OnInit {
   }
 
   loadMenu(): void {
-    this.customerService.getMenuByRestaurant(this.restaurant.restaurantId).subscribe({
+    // Use owner endpoint — returns ALL items (including unavailable)
+    this.customerService.getMenuByRestaurantOwner(this.restaurant.restaurantId).subscribe({
       next: (res) => {
         this.menuItems = res.success ? (res.data || []) : [];
         this.loading = false;

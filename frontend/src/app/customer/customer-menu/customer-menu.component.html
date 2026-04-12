@@ -1,10 +1,12 @@
 <div class="menu-container">
+
   <!-- HEADER -->
   <div class="menu-header">
     <button class="back-btn" (click)="goHome()">← Back</button>
     <h1>{{ restaurantName || 'Menu' }}</h1>
     <button class="cart-btn" (click)="goToCart()">
-      🛒 Cart <span *ngIf="cartItemCount > 0" class="cart-count-badge">{{ cartItemCount }}</span>
+      🛒 Cart
+      <span *ngIf="totalCartCount > 0" class="cart-count-badge">{{ totalCartCount }}</span>
     </button>
   </div>
 
@@ -23,7 +25,10 @@
     <app-item-card
       *ngFor="let item of menuItems"
       [item]="item"
-      (add)="addToCart($event)">
+      [quantity]="qtyOf(item.menuId)"
+      [inFlight]="!!inFlight[item.menuId]"
+      (increase)="increase($event)"
+      (decrease)="decrease($event)">
     </app-item-card>
   </div>
 
@@ -32,4 +37,5 @@
     <p>😕 No menu items available for this restaurant.</p>
     <button (click)="goHome()" class="btn-primary">Back to Restaurants</button>
   </div>
+
 </div>

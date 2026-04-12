@@ -45,9 +45,9 @@
   <p>🛒 Your cart is empty</p>
   <p class="empty-hint">Browse restaurants and add items</p>
 </div>
-<div *ngFor="let item of cartItems; let i = index" class="cart-item">
+  <div *ngFor="let item of cartItems; let i = index" class="cart-item">
   <div class="cart-item-info">
-    <h4>{{ item.itemId }}</h4>
+    <h4>{{ item.name || item.itemId }}</h4>
     <span class="cart-item-qty">Qty: {{item.quantity}}</span>
     <span class="cart-item-price">₹{{(item.price * item.quantity) | number:'1.0-0'}}</span>
   </div>
