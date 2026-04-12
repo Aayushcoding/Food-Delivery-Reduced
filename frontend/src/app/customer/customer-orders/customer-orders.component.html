@@ -45,16 +45,12 @@
     <div class="order-card-body">
       <div class="order-meta">
         <div class="order-meta-item">
-          <span class="meta-label">Restaurant</span>
-          <span class="meta-value">{{ order.restaurantId }}</span>
-        </div>
-        <div class="order-meta-item">
           <span class="meta-label">Total Amount</span>
-          <span class="meta-value price">₹{{ order.totalAmount | number:'1.0-2' }}</span>
+          <span class="meta-value price">₹{{ order.totalAmount | number:'1.0-0' }}</span>
         </div>
         <div class="order-meta-item">
-          <span class="meta-label">Delivery To</span>
-          <span class="meta-value">{{ order.deliveryAddress || 'N/A' }}</span>
+          <span class="meta-label">Items</span>
+          <span class="meta-value">{{ order.items?.length || 0 }}</span>
         </div>
       </div>
 

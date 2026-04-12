@@ -1,79 +1,109 @@
 <div class="cart-container">
+
   <!-- HEADER -->
   <div class="cart-header">
-    <button class="back-btn" (click)="continueShoppingOldStyle()">← Back</button>
-    <h1>🛒 Your Cart <span *ngIf="restaurantName" class="restaurant-tag">{{ restaurantName }}</span></h1>
+    <button class="back-btn" (click)="goHome()">← Back</button>
+    <div class="header-title">
+      <h1>🛒 Your Cart</h1>
+      <span class="item-count-chip" *ngIf="itemCount > 0">
+        {{ itemCount }} item{{ itemCount !== 1 ? 's' : '' }}
+      </span>
+    </div>
   </div>
 
-  <!-- ERROR MESSAGE -->
-  <div *ngIf="errorMessage" class="error-banner">
-    ⚠️ {{ errorMessage }}
-  </div>
+  <!-- ERROR -->
+  <div *ngIf="errorMessage" class="error-banner">⚠️ {{ errorMessage }}</div>
 
   <!-- LOADING -->
-  <div *ngIf="cartLoading" class="empty-cart">
-    <div class="loading-spinner">⏳</div>
-    <p>Loading your cart...</p>
+  <div *ngIf="cartLoading" class="state-box">
+    <div class="state-icon">⏳</div>
+    <p>Loading your cart…</p>
   </div>
 
   <!-- EMPTY CART -->
-  <div *ngIf="!cartLoading && cartItems.length === 0 && !errorMessage" class="empty-cart">
-    <div class="empty-icon">🛒</div>
+  <div *ngIf="!cartLoading && cartItems.length === 0 && !errorMessage" class="state-box">
+    <div class="state-icon">🛒</div>
     <p>Your cart is empty</p>
-    <button class="btn-primary" (click)="continueShoppingOldStyle()">Browse Restaurants</button>
+    <button class="btn-primary" (click)="goHome()">Browse Restaurants</button>
   </div>
 
-  <!-- CART ITEMS -->
-  <div *ngIf="!cartLoading && cartItems.length > 0" class="cart-content">
-    <!-- ITEMS LIST -->
-    <div class="items-list">
-      <div *ngFor="let item of cartItems; let i = index" class="cart-item">
-        <div class="item-details">
-          <h3>{{ item.itemName }}</h3>
-          <div class="item-qty-row">
-            <span class="qty-badge">× {{ item.quantity }}</span>
-            <span class="unit-price">₹{{ item.price }} each</span>
+  <!-- CART WITH ITEMS -->
+  <div *ngIf="!cartLoading && cartItems.length > 0" class="cart-layout">
+
+    <!-- LEFT: ITEM CARDS -->
+    <div class="items-column">
+      <div *ngFor="let item of cartItems" class="cart-card">
+
+        <!-- Item Name + Unit price -->
+        <div class="card-left">
+          <h3 class="cart-item-name">{{ item.itemName }}</h3>
+          <p class="cart-unit-price">₹{{ item.price | number:'1.0-0' }} each</p>
+        </div>
+
+        <!-- Right: Stepper + Subtotal + Remove -->
+        <div class="card-right">
+          <!-- Quantity stepper -->
+          <div class="qty-stepper">
+            <button class="qty-btn minus"
+              (click)="decrease(item)"
+              [disabled]="inFlight[item.itemId]">−</button>
+            <span class="qty-value">{{ item.quantity }}</span>
+            <button class="qty-btn plus"
+              (click)="increase(item)"
+              [disabled]="inFlight[item.itemId]">+</button>
           </div>
-          <p class="item-price">₹{{ item.price * item.quantity | number:'1.0-0' }}</p>
+
+          <!-- Subtotal -->
+          <span class="item-subtotal">₹{{ (item.price * item.quantity) | number:'1.0-0' }}</span>
+
+          <!-- Remove -->
+          <button class="remove-btn"
+            (click)="remove(item)"
+            [disabled]="inFlight[item.itemId]"
+            title="Remove item">🗑</button>
         </div>
-        <button class="remove-btn" (click)="remove(i)">✕</button>
       </div>
     </div>
 
-    <!-- CHECKOUT SECTION -->
-    <div class="checkout-section">
-      <h3 class="summary-title">Order Summary</h3>
-      <div class="summary">
-        <div class="summary-line">
-          <span>Items:</span>
-          <span class="value">{{ itemCount }}</span>
+    <!-- RIGHT: ORDER SUMMARY -->
+    <div class="summary-column">
+      <div class="summary-card">
+        <h3 class="summary-title">Order Summary</h3>
+
+        <div class="summary-lines">
+          <div class="summary-row">
+            <span>Items</span>
+            <span>{{ itemCount }}</span>
+          </div>
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <span>₹{{ total | number:'1.0-0' }}</span>
+          </div>
+          <div class="summary-row">
+            <span>Delivery</span>
+            <span class="free-tag">FREE</span>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-row total-row">
+            <span>Total</span>
+            <span>₹{{ total | number:'1.0-0' }}</span>
+          </div>
         </div>
-        <div class="summary-line">
-          <span>Subtotal:</span>
-          <span class="value">₹{{ total | number:'1.0-0' }}</span>
-        </div>
-        <div class="summary-line">
-          <span>Delivery:</span>
-          <span class="value free">FREE</span>
-        </div>
-        <div class="summary-line total">
-          <span>Total:</span>
-          <span class="value">₹{{ total | number:'1.0-0' }}</span>
-        </div>
+
+        <!-- Place Order -->
+        <button
+          class="btn-checkout"
+          (click)="placeOrder()"
+          [disabled]="loading || cartItems.length === 0">
+          {{ loading ? '⏳ Processing…' : '🚀 Place Order' }}
+        </button>
+
+        <!-- Continue Shopping -->
+        <button class="btn-continue" (click)="goHome()">
+          ← Continue Shopping
+        </button>
       </div>
-
-      <button
-        class="btn-checkout"
-        (click)="placeOrder()"
-        [disabled]="loading || cartItems.length === 0">
-        {{ loading ? '⏳ Processing...' : '🚀 Place Order' }}
-      </button>
-
-      <button
-        class="btn-continue"
-        (click)="continueShoppingOldStyle()">
-        ← Continue Shopping
-      </button>
     </div>
+
   </div>
 </div>

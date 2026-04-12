@@ -11,12 +11,15 @@ import { CustomerService } from '../../core/services/customer.service';
 })
 export class CustomerCartComponent implements OnInit {
 
-  cartItems: any[] = [];       // { itemId, name, price, quantity, restaurantId }
+  // Each item: { itemId, name, itemName, price, quantity }
+  cartItems: any[] = [];
   cartId: string = '';
-  restaurantName: string = '';
   loading: boolean = false;
   cartLoading: boolean = false;
   errorMessage: string = '';
+
+  // Prevent double-tap per item during API call
+  inFlight: { [itemId: string]: boolean } = {};
 
   constructor(
     private router: Router,
@@ -31,10 +34,7 @@ export class CustomerCartComponent implements OnInit {
 
   loadCart(): void {
     const user = this.authService.getUser();
-    if (!user) {
-      this.router.navigate(['/login']);
-      return;
-    }
+    if (!user) { this.router.navigate(['/login']); return; }
 
     this.cartLoading = true;
     this.errorMessage = '';
@@ -44,79 +44,105 @@ export class CustomerCartComponent implements OnInit {
         this.cartLoading = false;
         if (res.success && res.data) {
           this.cartId = res.data.id;
-
-          // Backend now stores name directly in each cart item — no extra API calls needed
+          // Backend stores 'name' in cart items — map to itemName for template
           this.cartItems = (res.data.items || []).map((item: any) => ({
             ...item,
-            itemName: item.name || item.itemId   // 'name' is set server-side
+            itemName: item.name || item.itemName || item.itemId
           }));
-
-          // Fetch restaurant name once from the cart's restaurantId
-          if (res.data.restaurantId) {
-            this.customerService.getRestaurantById(res.data.restaurantId).subscribe({
-              next: r => { if (r.success) this.restaurantName = r.data.restaurantName; },
-              error: () => {}
-            });
-          }
         } else {
           this.cartItems = [];
         }
       },
       error: (err) => {
         this.cartLoading = false;
-        if (err.status === 404) {
-          this.cartItems = []; // empty cart — valid
-        } else {
+        this.cartItems = (err.status === 404) ? [] : [];
+        if (err.status !== 404) {
           this.errorMessage = 'Failed to load cart. Please refresh.';
-          console.error('Error loading cart:', err);
         }
       }
     });
   }
 
-  // Total: price × quantity for each item
+  // ── TOTALS ─────────────────────────────────────────────────────────
   get total(): number {
-    return this.cartItems.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+    return this.cartItems.reduce((sum, i) => sum + (i.price || 0) * (i.quantity || 1), 0);
   }
 
   get itemCount(): number {
-    return this.cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    return this.cartItems.reduce((sum, i) => sum + (i.quantity || 1), 0);
   }
 
-  remove(index: number): void {
-    const item = this.cartItems[index];
-    if (!this.cartId || !item?.itemId) return;
+  // ── QUANTITY CONTROLS ──────────────────────────────────────────────
+  increase(item: any): void {
+    if (!this.cartId || this.inFlight[item.itemId]) return;
+    this.inFlight[item.itemId] = true;
+    const newQty = (item.quantity || 1) + 1;
 
+    this.customerService.updateCartItemQuantity(this.cartId, item.itemId, newQty).subscribe({
+      next: (res) => {
+        this.inFlight[item.itemId] = false;
+        if (res.success) { item.quantity = newQty; }
+      },
+      error: () => { this.inFlight[item.itemId] = false; }
+    });
+  }
+
+  decrease(item: any): void {
+    if (!this.cartId || this.inFlight[item.itemId]) return;
+    this.inFlight[item.itemId] = true;
+
+    if ((item.quantity || 1) <= 1) {
+      // Remove item entirely when qty would reach 0
+      this.customerService.removeFromCart(this.cartId, item.itemId).subscribe({
+        next: (res) => {
+          this.inFlight[item.itemId] = false;
+          if (res.success) {
+            this.cartItems = this.cartItems.filter(i => i.itemId !== item.itemId);
+          }
+        },
+        error: () => { this.inFlight[item.itemId] = false; }
+      });
+    } else {
+      const newQty = item.quantity - 1;
+      this.customerService.updateCartItemQuantity(this.cartId, item.itemId, newQty).subscribe({
+        next: (res) => {
+          this.inFlight[item.itemId] = false;
+          if (res.success) { item.quantity = newQty; }
+        },
+        error: () => { this.inFlight[item.itemId] = false; }
+      });
+    }
+  }
+
+  remove(item: any): void {
+    if (!this.cartId || !item?.itemId) return;
     this.customerService.removeFromCart(this.cartId, item.itemId).subscribe({
       next: (res) => {
         if (res.success) {
-          this.loadCart(); // Re-sync with backend
+          this.cartItems = this.cartItems.filter(i => i.itemId !== item.itemId);
         }
       },
       error: (err) => {
-        console.error('Error removing item:', err);
         this.errorMessage = err?.error?.message || 'Could not remove item.';
       }
     });
   }
 
-  continueShoppingOldStyle(): void {
+  // ── NAVIGATION ─────────────────────────────────────────────────────
+  goHome(): void {
     this.router.navigate(['/customer/customer-home']);
   }
 
+  // ── ORDER ──────────────────────────────────────────────────────────
   placeOrder(): void {
     if (this.cartItems.length === 0) return;
 
     const user = this.authService.getUser();
-    if (!user) {
-      this.router.navigate(['/login']);
-      return;
-    }
+    if (!user) { this.router.navigate(['/login']); return; }
 
     this.loading = true;
     this.errorMessage = '';
 
-    // Backend reads cart by userId — no need to send items
     this.orderService.createOrder({ userId: user.id }).subscribe({
       next: (response) => {
         this.loading = false;
@@ -133,7 +159,6 @@ export class CustomerCartComponent implements OnInit {
       error: (err) => {
         this.loading = false;
         this.errorMessage = err?.error?.message || 'Error placing order. Please try again.';
-        console.error('Order error:', err);
       }
     });
   }
