@@ -29,6 +29,8 @@
 <div class="profile-content">
 <p class="username">{{ isLoggedIn ? userName : 'Guest' }}</p>
 <p class="status">{{ isLoggedIn ? 'Logged in' : 'Not logged in' }}</p>
+<button *ngIf="isLoggedIn" (click)="goToProfile()" class="profile-link-btn" id="btn-my-profile">👤 My Profile</button>
+<button *ngIf="isLoggedIn" (click)="goToOrders()" class="profile-link-btn" id="btn-my-orders">📦 My Orders</button>
 <button *ngIf="isLoggedIn" (click)="logout()" class="logout-btn">Logout</button>
 <button *ngIf="!isLoggedIn" (click)="goToLogin()" class="logout-btn">Login</button>
 </div>
@@ -94,7 +96,7 @@
   <!-- Image -->
   <div class="card-image">
     <img 
-      [src]="restaurant.imageUrl"
+      [src]="restaurant.displayImage || restaurant.imageUrl || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=200&fit=crop'"
       [alt]="restaurant.restaurantName"
       onerror="this.src='https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=200&fit=crop'"
     >
@@ -106,6 +108,7 @@
     <h3 class="restaurant-name">{{restaurant.restaurantName}}</h3>
     
     <p class="cuisine">🍽 {{getCuisineString(restaurant.cuisine)}}</p>
+    <p class="rest-address" *ngIf="restaurant.address">📍 {{ restaurant.address }}</p>
     
     <div class="card-meta">
       <span class="rating">⭐ {{restaurant.rating}}</span>

@@ -1,5 +1,5 @@
 import { NgModule } from '@angular/core';
-import { RouterModule,Routes } from '@angular/router';
+import { RouterModule, Routes } from '@angular/router';
 
 import { LoginComponent } from './auth/login/login.component';
 import { SignupComponent } from './auth/signup/signup.component';
@@ -14,38 +14,39 @@ import { CustomerMenuComponent } from './customer/customer-menu/customer-menu.co
 import { HomePageComponent } from './RestaurantOwner/home-page/home-page.component';
 import { MenuComponent } from './RestaurantOwner/menu/menu.component';
 import { OrdersComponent } from './RestaurantOwner/orders/orders.component';
+import { ProfileComponent } from './RestaurantOwner/profile/profile.component';
 
 import { AuthGuard } from './core/guards/auth.guard';
 
-const routes:Routes=[
+const routes: Routes = [
 
-{path:'',redirectTo:'login',pathMatch:'full'},
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
 
-{path:'login',component:LoginComponent},
-{path:'signup',component:SignupComponent},
+  // Public auth routes
+  { path: 'login',  component: LoginComponent },
+  { path: 'signup', component: SignupComponent },
 
-// PROTECTED CUSTOMER ROUTES
-{path:'customer/customer-home',component:CustomerHomeComponent,canActivate:[AuthGuard]},
-{path:'customer/cart',component:CustomerCartComponent,canActivate:[AuthGuard]},
-{path:'customer/orders',component:CustomerOrdersComponent,canActivate:[AuthGuard]},
-{path:'customer/profile',component:CustomerProfileComponent,canActivate:[AuthGuard]},
-{path:'customer/success',component:SuccessComponent,canActivate:[AuthGuard]},
+  // ── CUSTOMER-ONLY ROUTES ───────────────────────────────────────────────
+  { path: 'customer/customer-home', component: CustomerHomeComponent, canActivate: [AuthGuard], data: { roles: ['Customer'] } },
+  { path: 'customer/cart',          component: CustomerCartComponent,  canActivate: [AuthGuard], data: { roles: ['Customer'] } },
+  { path: 'customer/orders',        component: CustomerOrdersComponent,canActivate: [AuthGuard], data: { roles: ['Customer'] } },
+  { path: 'customer/profile',       component: CustomerProfileComponent, canActivate: [AuthGuard], data: { roles: ['Customer'] } },
+  { path: 'customer/success',       component: SuccessComponent,       canActivate: [AuthGuard], data: { roles: ['Customer'] } },
+  { path: 'menu/:id',               component: CustomerMenuComponent,  canActivate: [AuthGuard], data: { roles: ['Customer'] } },
 
-// MENU ROUTE (Dynamic - :id is restaurant ID)
-{path:'menu/:id',component:CustomerMenuComponent,canActivate:[AuthGuard]},
+  // ── OWNER-ONLY ROUTES ──────────────────────────────────────────────────
+  { path: 'restaurant',  component: HomePageComponent, canActivate: [AuthGuard], data: { roles: ['Owner'] } },
+  { path: 'owner/menu',  component: MenuComponent,     canActivate: [AuthGuard], data: { roles: ['Owner'] } },
+  { path: 'owner/orders',component: OrdersComponent,   canActivate: [AuthGuard], data: { roles: ['Owner'] } },
+  { path: 'owner/profile',component: ProfileComponent, canActivate: [AuthGuard], data: { roles: ['Owner'] } },
 
-// PROTECTED OWNER ROUTES
-{path:'restaurant',component:HomePageComponent,canActivate:[AuthGuard]},
-{path:'owner/menu',component:MenuComponent,canActivate:[AuthGuard]},
-{path:'owner/orders',component:OrdersComponent,canActivate:[AuthGuard]},
-
-// Wildcard - redirect to login if no route matches
-{path:'**',redirectTo:'login'}
+  // Wildcard — redirect unknown paths to login
+  { path: '**', redirectTo: 'login' }
 
 ];
 
 @NgModule({
-imports:[RouterModule.forRoot(routes)],
-exports:[RouterModule]
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
 })
-export class AppRoutingModule{}
+export class AppRoutingModule {}

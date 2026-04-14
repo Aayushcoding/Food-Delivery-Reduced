@@ -1,69 +1,178 @@
 <div class="owner-page">
 
+  <!-- TOAST -->
+  <div *ngIf="toastMessage" class="toast" [class.toast-error]="toastError">{{ toastMessage }}</div>
+
+  <!-- HEADER BAR -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <span class="logo">🍽 ByteBites Owner</span>
+      <span class="owner-label">{{ owner?.username }}</span>
+    </div>
+    <div class="top-bar-right">
+      <button class="btn-add-rest" (click)="toggleAddForm()">
+        {{ showAddForm ? '✕ Cancel' : '➕ Add Restaurant' }}
+      </button>
+      <button class="btn-profile" (click)="goToProfile()" id="btn-owner-profile">👤 Profile</button>
+      <button class="btn-logout" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
   <!-- LOADING -->
-  <div *ngIf="loading" class="loading-screen">
-    <p>⏳ Loading dashboard...</p>
+  <div *ngIf="loading" class="state-center">
+    <div class="spinner"></div>
+    <p>Loading your restaurants...</p>
   </div>
 
-  <!-- ERROR -->
-  <div *ngIf="!loading && errorMessage" class="error-screen">
-    <p>{{ errorMessage }}</p>
-    <button (click)="logout()" class="btn-logout">← Back to Login</button>
+  <!-- ADD RESTAURANT FORM -->
+  <div *ngIf="showAddForm && !loading" class="add-rest-form">
+    <h2>🏪 New Restaurant</h2>
+    <div class="form-row">
+      <input [(ngModel)]="newRestaurant.restaurantName"
+             placeholder="Restaurant Name *"
+             class="form-input" id="new-rest-name">
+      <input [(ngModel)]="newRestaurant.cuisine"
+             placeholder="Cuisines (comma-separated)"
+             class="form-input" id="new-rest-cuisine">
+    </div>
+    <input [(ngModel)]="newRestaurant.displayImage"
+           placeholder="Display Image URL (optional)"
+           class="form-input full" id="new-rest-image">
+    <div class="img-preview" *ngIf="newRestaurant.displayImage">
+      <img [src]="newRestaurant.displayImage"
+           alt="preview"
+           onerror="this.style.display='none'">
+    </div>
+    <button class="btn-save" (click)="addRestaurant()" [disabled]="saving">
+      {{ saving ? 'Creating...' : '✅ Create Restaurant' }}
+    </button>
   </div>
 
-  <!-- DASHBOARD -->
-  <div *ngIf="!loading && restaurant" class="dashboard">
+  <!-- MAIN CONTENT -->
+  <div *ngIf="!loading" class="main-content">
 
-    <!-- HEADER -->
-    <div class="dash-header">
-      <div>
-        <h1 class="restaurant-name">🍽 {{ restaurant.restaurantName }}</h1>
-        <p class="owner-name">Welcome back, <strong>{{ owner.username }}</strong></p>
-        <p class="cuisine-tag">{{ restaurant.cuisine?.join(', ') || restaurant.cuisine }}</p>
-      </div>
-      <button (click)="logout()" class="btn-logout">Logout</button>
+    <!-- EMPTY STATE -->
+    <div *ngIf="restaurants.length === 0 && !showAddForm" class="empty-state">
+      <div class="empty-icon">🏪</div>
+      <h2>No restaurants yet</h2>
+      <p>Click "Add Restaurant" to create your first one.</p>
     </div>
 
-    <!-- STATS -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">📦</div>
-        <div class="stat-value">{{ totalOrders }}</div>
-        <div class="stat-label">Total Orders</div>
-      </div>
-      <div class="stat-card pending">
-        <div class="stat-icon">⏳</div>
-        <div class="stat-value">{{ pendingOrders }}</div>
-        <div class="stat-label">Pending Orders</div>
-      </div>
-      <div class="stat-card earnings">
-        <div class="stat-icon">💰</div>
-        <div class="stat-value">₹{{ totalEarnings | number:'1.0-0' }}</div>
-        <div class="stat-label">Total Earnings</div>
-      </div>
-    </div>
+    <!-- RESTAURANTS GRID -->
+    <div class="restaurants-section" *ngIf="restaurants.length > 0">
+      <h2 class="section-title">Your Restaurants <span class="count-pill">{{ restaurants.length }}</span></h2>
 
-    <!-- QUICK ACTIONS -->
-    <div class="actions-row">
-      <button class="action-btn primary" (click)="goToMenu()">🍴 Manage Menu</button>
-      <button class="action-btn secondary" (click)="goToOrders()">📋 View Orders</button>
-    </div>
+      <div class="rest-cards">
+        <div *ngFor="let rest of restaurants"
+             class="rest-card"
+             [class.selected]="selectedRestaurant?.restaurantId === rest.restaurantId">
 
-    <!-- RECENT ORDERS PREVIEW -->
-    <div class="recent-orders" *ngIf="orders.length > 0">
-      <h2>Recent Orders</h2>
-      <div class="order-preview" *ngFor="let order of orders.slice(0, 5)">
-        <div class="order-preview-left">
-          <span class="order-id"># {{ order.id }}</span>
-          <span class="order-items">{{ order.items?.length || 0 }} item(s)</span>
+          <!-- IMAGE -->
+          <div class="rest-card-img" (click)="selectRestaurant(rest)">
+            <img [src]="imgOf(rest)"
+                 [alt]="rest.restaurantName"
+                 onerror="this.src='https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&h=300&fit=crop'">
+          </div>
+
+          <!-- CARD BODY — NORMAL VIEW -->
+          <div class="rest-card-body" *ngIf="renamingId !== rest.restaurantId">
+            <h3 class="rest-name" (click)="selectRestaurant(rest)">{{ rest.restaurantName }}</h3>
+            <p class="rest-cuisine">🍽 {{ getCuisineString(rest.cuisine) || 'Various' }}</p>
+            <p class="rest-card-address" *ngIf="rest.address">📍 {{ rest.address }}</p>
+            <div class="rest-card-actions">
+              <button class="btn-select" (click)="selectRestaurant(rest)">
+                {{ selectedRestaurant?.restaurantId === rest.restaurantId ? '▼ Selected' : '▶ Select' }}
+              </button>
+              <button class="btn-edit-name" (click)="startRename(rest)">✏️ Edit</button>
+              <button class="btn-delete-rest"
+                (click)="deleteRestaurant(rest)"
+                [disabled]="deletingId === rest.restaurantId"
+                title="Delete restaurant">
+                {{ deletingId === rest.restaurantId ? '⏳' : '🗑' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- CARD BODY — EDIT MODE -->
+          <div class="rest-card-body rename-mode" *ngIf="renamingId === rest.restaurantId">
+            <p class="edit-mode-label">✏️ Edit Restaurant</p>
+            <input [(ngModel)]="renameValue" placeholder="Restaurant name *" class="rename-input" id="rename-name">
+            <input [(ngModel)]="renameCuisineValue" placeholder="Cuisines (comma-separated)" class="rename-input" id="rename-cuisine">
+            <input [(ngModel)]="renameAddressValue" placeholder="Address" class="rename-input" id="rename-address">
+            <input [(ngModel)]="renameContactValue" placeholder="Contact number" class="rename-input" id="rename-contact">
+            <input [(ngModel)]="renameImageValue" placeholder="Display image URL (optional)" class="rename-input" id="rename-image">
+            <div class="img-preview" *ngIf="renameImageValue">
+              <img [src]="renameImageValue" alt="preview" onerror="this.style.display='none'" style="height:70px;border-radius:8px;object-fit:cover;">
+            </div>
+            <div class="rename-actions">
+              <button class="btn-save-sm" (click)="saveRename(rest)">Save</button>
+              <button class="btn-cancel-sm" (click)="cancelRename()">Cancel</button>
+            </div>
+          </div>
+
         </div>
-        <div class="order-preview-right">
-          <span class="order-amount">₹{{ order.totalAmount | number:'1.0-0' }}</span>
-          <span class="status-pill" [class]="order.status">{{ order.status }}</span>
-        </div>
       </div>
-      <button class="view-all-btn" (click)="goToOrders()">See all orders →</button>
     </div>
 
+    <!-- SELECTED RESTAURANT DETAILS -->
+    <div class="rest-detail" *ngIf="selectedRestaurant">
+      <div class="detail-header">
+        <img [src]="imgOf(selectedRestaurant)"
+             onerror="this.src='https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&h=300&fit=crop'"
+             class="detail-banner">
+        <div class="detail-overlay">
+          <h1>{{ selectedRestaurant.restaurantName }}</h1>
+          <p>{{ getCuisineString(selectedRestaurant.cuisine) }}</p>
+          <p *ngIf="selectedRestaurant.address" class="detail-address">📍 {{ selectedRestaurant.address }}</p>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📦</div>
+          <div class="stat-value">{{ totalOrders }}</div>
+          <div class="stat-label">Total Orders</div>
+        </div>
+        <div class="stat-card pending">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-value">{{ pendingOrders }}</div>
+          <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card earnings">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value">₹{{ totalEarnings | number:'1.0-0' }}</div>
+          <div class="stat-label">Earnings</div>
+        </div>
+      </div>
+
+      <!-- QUICK ACTIONS -->
+      <div class="actions-row">
+        <button class="action-btn primary" (click)="goToMenu(selectedRestaurant)">🍴 Manage Menu</button>
+        <button class="action-btn secondary" (click)="goToOrders(selectedRestaurant)">📋 View Orders</button>
+      </div>
+
+      <!-- RECENT ORDERS -->
+      <div class="recent-orders" *ngIf="orders.length > 0">
+        <h2>Recent Orders</h2>
+        <div class="order-preview" *ngFor="let order of orders.slice(0, 5)">
+          <div class="order-preview-left">
+            <span class="order-id">#{{ order.id }}</span>
+            <span class="order-items">{{ order.items?.length || 0 }} item(s)</span>
+          </div>
+          <div class="order-preview-right">
+            <span class="order-amount">₹{{ order.totalAmount | number:'1.0-0' }}</span>
+            <span class="status-pill" [class]="order.status">{{ order.status }}</span>
+          </div>
+        </div>
+        <button class="view-all-btn" (click)="goToOrders(selectedRestaurant)">See all orders →</button>
+      </div>
+
+      <div class="no-orders" *ngIf="orders.length === 0">
+        <p>No orders yet for this restaurant.</p>
+      </div>
+
+    </div>
   </div>
+
 </div>

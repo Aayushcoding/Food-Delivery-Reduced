@@ -1,59 +1,52 @@
 ///paymentController.js
 const db = require('../utils/dbManager');
 
-// ================= PROCESS PAYMENT =================
 // POST /api/payment/pay
-const processPayment = async(req, res) => {
+// Marks an order as "confirmed" (simulated payment — no real gateway)
+const processPayment = async (req, res) => {
   try {
     const { orderId, userId } = req.body;
 
-    // Validate input
     if (!orderId || !userId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "orderId and userId are required" 
+      return res.status(400).json({
+        success: false,
+        message: 'orderId and userId are required'
       });
     }
 
-    // Find order
-    const order = db.getOrder(orderId);
+    // await is required — db methods return Promises
+    const order = await db.getOrder(orderId);
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found" });
+      return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // Check if this user owns the order
     if (order.userId !== userId) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Forbidden: Not your order" 
-      });
+      return res.status(403).json({ success: false, message: 'Forbidden: not your order' });
     }
 
-    // Prevent payment for already confirmed/delivered orders
-    if (order.status === "confirmed" || order.status === "delivered" || order.status === "cancelled") {
+    if (['confirmed', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'].includes(order.status)) {
       return res.status(400).json({
         success: false,
         message: `Order cannot be paid. Current status: ${order.status}`
       });
     }
 
-    // Update order status to confirmed
-    const updated = db.updateOrder(orderId, { status: "confirmed" });
+    // await is required — db methods return Promises
+    const updated = await db.updateOrder(orderId, { status: 'confirmed' });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Payment successful. Order confirmed!",
+      message: 'Payment successful. Order confirmed!',
       data: {
-        orderId: updated.id,
-        status: updated.status,
-        totalAmount: updated.totalAmount,
-      },
+        orderId:     updated.id,
+        status:      updated.status,
+        totalAmount: updated.totalAmount
+      }
     });
-  } catch(err) {
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+
+  } catch (err) {
+    console.error('[processPayment]', err.message);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 

@@ -70,22 +70,15 @@ Min 6 characters required
 </small>
 </div>
 
-<!-- RESTAURANT INPUT -->
-<div class="input-group"*ngIf="loginForm.value.role==='Owner'">
-<label>Enter Restaurant Name</label>
-<input type="text"formControlName="restaurantName"placeholder="Enter your restaurant name">
-
-<small class="error"*ngIf="f['restaurantName'].touched&&f['restaurantName'].invalid"class="text-danger">
-<span *ngIf="f['restaurantName'].errors?.['required']"class="text-danger">
-Restaurant Name is required
-</span>
-</small>
-</div>
-
 <!-- BUTTON -->
-<button type="submit"[disabled]="loginForm.invalid">
-Login
+<button type="submit" [disabled]="isLoading || loginForm.invalid">
+  {{ isLoading ? 'Logging in...' : 'Login' }}
 </button>
+
+<!-- ERROR -->
+<div *ngIf="errorMessage" class="text-danger" style="margin-top:10px;font-size:13px;">
+  {{ errorMessage }}
+</div>
 
 <!-- SIGNUP -->
 <div class="signup-text">

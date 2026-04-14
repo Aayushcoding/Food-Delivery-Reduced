@@ -27,6 +27,18 @@ export class CustomerService{
     return this.http.get(`${this.baseUrl}/restaurants/owner/${ownerId}`, { headers: this.authService.getAuthHeaders() });
   }
 
+  createRestaurant(data:any):Observable<any>{
+    return this.http.post(`${this.baseUrl}/restaurants`, data, { headers: this.authService.getAuthHeaders() });
+  }
+
+  updateRestaurant(id:string, data:any):Observable<any>{
+    return this.http.put(`${this.baseUrl}/restaurants/${id}`, data, { headers: this.authService.getAuthHeaders() });
+  }
+
+  deleteRestaurant(id:string):Observable<any>{
+    return this.http.delete(`${this.baseUrl}/restaurants/${id}`, { headers: this.authService.getAuthHeaders() });
+  }
+
   // ── MENUS (PUBLIC — available items only) ─────────────────────────
   getMenu(restaurantId?:string):Observable<any>{
     let url=`${this.baseUrl}/menu`;

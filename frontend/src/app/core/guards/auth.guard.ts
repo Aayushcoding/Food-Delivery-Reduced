@@ -13,14 +13,28 @@ export class AuthGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): boolean {
-    // Check if user is logged in
-    if (this.authService.isLoggedIn()) {
-      return true;
+    // 1. Must be logged in
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login']);
+      return false;
     }
 
-    // Not logged in, redirect to login
-    this.router.navigate(['/login']);
-    return false;
+    // 2. Role enforcement — only checked when route declares required roles
+    const requiredRoles = route.data?.['roles'] as string[] | undefined;
+    if (requiredRoles && requiredRoles.length > 0) {
+      const user = this.authService.getUser();
+      if (!user || !requiredRoles.includes(user.role)) {
+        // Redirect to correct home based on actual role instead of showing 404
+        if (user?.role === 'Owner') {
+          this.router.navigate(['/restaurant']);
+        } else {
+          this.router.navigate(['/customer/customer-home']);
+        }
+        return false;
+      }
+    }
+
+    return true;
   }
 
 }

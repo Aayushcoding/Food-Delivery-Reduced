@@ -143,13 +143,23 @@ this.cartOpen=false;
 }
 
 logout(){
-this.authService.logout();
-this.isLoggedIn=false;
-this.userName='Guest';
-this.profileOpen=false;
-this.cartItems=[];
-this.cartCount=0;
-this.router.navigate(['/login']);
+  this.authService.logout();
+  this.isLoggedIn=false;
+  this.userName='Guest';
+  this.profileOpen=false;
+  this.cartItems=[];
+  this.cartCount=0;
+  this.router.navigate(['/login']);
+}
+
+goToProfile(): void {
+  this.profileOpen = false;
+  this.router.navigate(['/customer/profile']);
+}
+
+goToOrders(): void {
+  this.profileOpen = false;
+  this.router.navigate(['/customer/orders']);
 }
 
 getItemLabel(item:any):string{

@@ -12,8 +12,8 @@ const {
   deleteCart
 } = require('../controllers/cartController');
 
-// Admin: get all carts (unprotected for internal use)
-router.get('/', getCarts);
+// Protected — requires auth (internal/admin use only)
+router.get('/', auth, getCarts);
 
 // Customer: get own cart by userId
 router.get('/user/:userId', auth, getCartByUser);

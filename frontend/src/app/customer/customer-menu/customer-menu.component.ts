@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MenuService } from '../../core/services/menu.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CustomerService } from '../../core/services/customer.service';
 
@@ -33,7 +32,6 @@ export class CustomerMenuComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private menuService: MenuService,
     private authService: AuthService,
     private customerService: CustomerService
   ) {}
@@ -58,7 +56,7 @@ export class CustomerMenuComponent implements OnInit {
 
   loadMenuItems(): void {
     this.loading = true;
-    this.menuService.getMenuByRestaurant(this.restaurantId).subscribe({
+    this.customerService.getMenuByRestaurant(this.restaurantId).subscribe({
       next: (response) => {
         this.menuItems = response.success ? (response.data || []) : [];
         this.loading = false;

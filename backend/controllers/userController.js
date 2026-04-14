@@ -5,12 +5,12 @@ const db = require('../utils/dbManager');
 // ================= GET ALL USERS =================
 const getUsers = async(req, res) => {
   try {
-    const users = db.getAllUsers();
-    res.json({
-      success: true,
-      count: users.length,
-      data: users
+    const users = (await db.getAllUsers()).map(u => {
+      const safe = { ...u };
+      delete safe.password;
+      return safe;
     });
+    res.json({ success: true, count: users.length, data: users });
   } catch(error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -19,7 +19,7 @@ const getUsers = async(req, res) => {
 // ================= GET SINGLE USER =================
 const getUser = async(req, res) => {
   try {
-    const user = db.getUser(req.params.id);
+    const user = await db.getUser(req.params.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -40,14 +40,15 @@ const createUser = async(req, res) => {
       return res.status(400).json({ success: false, message: 'username, email, phoneNo and password are required' });
     }
 
-    const existing = db.getUserByEmail(email);
+    // Enforce same-email multi-role: only block if same email+role combo exists
+    const existing = await db.getUserByEmailAndRole(email.toLowerCase(), role || 'Customer');
     if (existing) {
-      return res.status(400).json({ success: false, message: 'Email already exists' });
+      return res.status(400).json({ success: false, message: 'An account with this email and role already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = db.createUser({
+    const user = await db.createUser({
       username,
       email: email.toLowerCase(),
       phoneNo,
@@ -68,15 +69,29 @@ const createUser = async(req, res) => {
 // ================= UPDATE USER =================
 const updateUser = async(req, res) => {
   try {
-    let updates = { ...req.body };
-    delete updates.id;   // prevent ID mutation
-    delete updates.role; // prevent role escalation via this endpoint
+    const { id } = req.params;
 
-    if (updates.password) {
-      updates.password = await bcrypt.hash(updates.password, 10);
+    // Ownership check — users can only update their own profile
+    if (req.user.id !== id) {
+      return res.status(403).json({ success: false, message: 'You can only update your own profile.' });
     }
 
-    const updated = db.updateUser(req.params.id, updates);
+    let updates = { ...req.body };
+    delete updates.id;        // prevent ID mutation
+    delete updates.role;      // prevent role escalation
+    delete updates.email;     // email cannot be changed here
+    delete updates.password;  // use dedicated endpoint
+
+    if (updates.username !== undefined) {
+      if (!updates.username || !updates.username.trim()) {
+        return res.status(400).json({ success: false, message: 'Username cannot be empty.' });
+      }
+      updates.username = updates.username.trim();
+    }
+
+    if (updates.phoneNo !== undefined) updates.phoneNo = String(updates.phoneNo).trim();
+
+    const updated = await db.updateUser(id, updates);
     if (!updated) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -93,7 +108,12 @@ const updateUser = async(req, res) => {
 // ================= DELETE USER =================
 const deleteUser = async(req, res) => {
   try {
-    const user = db.deleteUser(req.params.id);
+    const { id } = req.params;
+    // Users can only delete their own account
+    if (req.user.id !== id) {
+      return res.status(403).json({ success: false, message: 'You can only delete your own account.' });
+    }
+    const user = await db.deleteUser(id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -103,10 +123,4 @@ const deleteUser = async(req, res) => {
   }
 };
 
-module.exports = {
-  getUsers,
-  getUser,
-  createUser,
-  updateUser,
-  deleteUser
-};
+module.exports = { getUsers, getUser, createUser, updateUser, deleteUser };

@@ -179,3 +179,101 @@
   .form-grid { grid-template-columns: 1fr; }
   .page-header { flex-wrap: wrap; gap: 8px; }
 }
+
+/* ── HEADER TITLE ────────────────────────────────────────── */
+.header-title { text-align: center; }
+.header-title h1 { font-size: 22px; font-weight: 800; color: var(--text); margin: 0; }
+.header-title .restaurant-label { font-size: 13px; color: var(--primary); font-weight: 600; margin: 2px 0 0; }
+
+/* ── IMAGE PREVIEW IN FORM ──────────────────────────────── */
+.img-preview-row { margin: 0 0 12px; }
+.img-preview-row img { height: 80px; border-radius: 8px; object-fit: cover; }
+
+/* ── MENU CARD WITH IMAGE ───────────────────────────────── */
+.menu-card {
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.menu-card-img {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.menu-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s;
+}
+.menu-card:hover .menu-card-img img { transform: scale(1.04); }
+
+.menu-card-img .veg-dot {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 16px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+  padding: 2px;
+}
+
+.unavail-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(231,76,60,0.85);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
+.menu-card-body { padding: 14px 16px; width: 100%; }
+
+/* Unavailable card dim */
+.menu-card.unavailable { opacity: 0.65; }
+
+/* ── ITEM ACTIONS ROW ───────────────────────────────────── */
+.item-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+.btn-toggle {
+  background: none;
+  border: 1px solid #ddd;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-toggle:hover { background: #f0f0f0; }
+
+/* ── EDIT GRID ──────────────────────────────────────────── */
+.edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.edit-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+.edit-input:focus { border-color: var(--primary); }
+.edit-input.full { width: 100%; grid-column: 1 / -1; margin-bottom: 6px; }
+.edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+
+/* ── ERROR BOX ──────────────────────────────────────────── */
+.error-box { border: 1px solid #ffcdd2; }
+.error-box p { color: #c0392b; margin-bottom: 12px; }

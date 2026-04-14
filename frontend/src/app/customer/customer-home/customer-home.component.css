@@ -164,6 +164,26 @@
   transform: translateY(-2px);
 }
 
+.profile-link-btn {
+  width: 100%;
+  padding: 10px 12px;
+  background: #f0f0f0;
+  color: #2c3e50;
+  border: 1px solid #e0e0e0;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+  text-align: left;
+}
+.profile-link-btn:hover {
+  background: #ff6b35;
+  color: white;
+  border-color: #ff6b35;
+}
+
 /* ============ CART SIDEBAR ============ */
 .cart-sidebar {
   position: fixed;
@@ -445,7 +465,16 @@
 .cuisine {
   font-size: 13px;
   color: var(--text-light);
-  margin: 0 0 12px 0;
+  margin: 0 0 4px 0;
+}
+
+.rest-address {
+  font-size: 12px;
+  color: #95a5a6;
+  margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .card-meta {

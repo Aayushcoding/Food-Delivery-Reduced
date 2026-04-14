@@ -8,8 +8,8 @@ const calcTotal = (items) =>
 const getCarts = async (req, res) => {
   try {
     const { userId, restaurantId } = req.query;
-    let carts = db.getAllCarts();
-    if (userId) carts = carts.filter(c => c.userId === userId);
+    let carts = await db.getAllCarts();
+    if (userId)       carts = carts.filter(c => c.userId === userId);
     if (restaurantId) carts = carts.filter(c => c.restaurantId === restaurantId);
     res.json({ success: true, data: carts });
   } catch (error) {
@@ -20,7 +20,7 @@ const getCarts = async (req, res) => {
 // GET CART BY ID
 const getCart = async (req, res) => {
   try {
-    const cart = db.getCart(req.params.id);
+    const cart = await db.getCart(req.params.id);
     if (!cart) return res.status(404).json({ success: false, message: 'Cart not found' });
     res.json({ success: true, data: cart });
   } catch (error) {
@@ -31,7 +31,7 @@ const getCart = async (req, res) => {
 // GET CART BY USER
 const getCartByUser = async (req, res) => {
   try {
-    const cart = db.getCartByUserId(req.params.userId);
+    const cart = await db.getCartByUserId(req.params.userId);
     if (!cart) return res.status(404).json({ success: false, message: 'Cart not found' });
     res.json({ success: true, data: cart });
   } catch (error) {
@@ -40,9 +40,6 @@ const getCartByUser = async (req, res) => {
 };
 
 // ADD ITEM TO CART
-// POST /api/cart/add-item
-// Body: { userId, itemId, quantity }
-// Price and name are ALWAYS taken from DB — never trusted from client.
 const addItemToCart = async (req, res) => {
   try {
     const { userId, itemId, quantity } = req.body;
@@ -56,11 +53,10 @@ const addItemToCart = async (req, res) => {
       return res.status(400).json({ success: false, message: 'quantity must be a positive integer' });
     }
 
-    const user = db.getUser(userId);
+    const user = await db.getUser(userId);
     if (!user) return res.status(404).json({ success: false, message: `User '${userId}' not found` });
 
-    // Look up menu item in DB — use server-side price and name
-    const menuItem = db.getMenuItem(itemId);
+    const menuItem = await db.getMenuItem(itemId);
     if (!menuItem) return res.status(404).json({ success: false, message: `Menu item '${itemId}' not found` });
 
     if (!menuItem.isAvailable) {
@@ -68,10 +64,10 @@ const addItemToCart = async (req, res) => {
     }
 
     const restaurantId = menuItem.restaurantId;
-    let cart = db.getCartByUserId(userId);
+    let cart = await db.getCartByUserId(userId);
 
     if (!cart) {
-      cart = db.createCart({ userId, restaurantId, items: [], totalAmount: 0 });
+      cart = await db.createCart({ userId, restaurantId, items: [], totalAmount: 0 });
     } else if (cart.restaurantId !== restaurantId) {
       return res.status(400).json({
         success: false,
@@ -83,17 +79,11 @@ const addItemToCart = async (req, res) => {
     if (existingIndex !== -1) {
       cart.items[existingIndex].quantity += qty;
     } else {
-      cart.items.push({
-        itemId,
-        name: menuItem.itemName,
-        price: menuItem.price,
-        quantity: qty,
-        restaurantId
-      });
+      cart.items.push({ itemId, name: menuItem.itemName, price: menuItem.price, quantity: qty, restaurantId });
     }
 
     cart.totalAmount = calcTotal(cart.items);
-    const updated = db.updateCart(cart.id, cart);
+    const updated = await db.updateCart(cart.id, { items: cart.items, totalAmount: cart.totalAmount, restaurantId: cart.restaurantId });
     res.json({ success: true, message: 'Item added to cart', data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -101,8 +91,6 @@ const addItemToCart = async (req, res) => {
 };
 
 // UPDATE ITEM QUANTITY
-// PUT /api/cart/update-quantity
-// Body: { cartId, itemId, quantity }
 const updateItemQuantity = async (req, res) => {
   try {
     const { cartId, itemId, quantity } = req.body;
@@ -110,7 +98,7 @@ const updateItemQuantity = async (req, res) => {
       return res.status(400).json({ success: false, message: 'cartId, itemId and quantity are required' });
     }
 
-    let cart = db.getCart(cartId);
+    let cart = await db.getCart(cartId);
     if (!cart) return res.status(404).json({ success: false, message: 'Cart not found' });
 
     const itemIndex = cart.items.findIndex(i => i.itemId === itemId);
@@ -124,7 +112,7 @@ const updateItemQuantity = async (req, res) => {
     }
 
     cart.totalAmount = calcTotal(cart.items);
-    const updated = db.updateCart(cart.id, cart);
+    const updated = await db.updateCart(cart.id, { items: cart.items, totalAmount: cart.totalAmount });
     res.json({ success: true, message: 'Cart updated', data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -132,8 +120,6 @@ const updateItemQuantity = async (req, res) => {
 };
 
 // REMOVE ITEM FROM CART
-// POST /api/cart/remove-item
-// Body: { cartId, itemId }
 const removeItemFromCart = async (req, res) => {
   try {
     const { cartId, itemId } = req.body;
@@ -141,12 +127,12 @@ const removeItemFromCart = async (req, res) => {
       return res.status(400).json({ success: false, message: 'cartId and itemId are required' });
     }
 
-    let cart = db.getCart(cartId);
+    let cart = await db.getCart(cartId);
     if (!cart) return res.status(404).json({ success: false, message: 'Cart not found' });
 
     cart.items = cart.items.filter(i => i.itemId !== itemId);
     cart.totalAmount = calcTotal(cart.items);
-    const updated = db.updateCart(cart.id, cart);
+    const updated = await db.updateCart(cart.id, { items: cart.items, totalAmount: cart.totalAmount });
     res.json({ success: true, message: 'Item removed from cart', data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -156,7 +142,7 @@ const removeItemFromCart = async (req, res) => {
 // DELETE CART
 const deleteCart = async (req, res) => {
   try {
-    const deleted = db.deleteCart(req.params.id);
+    const deleted = await db.deleteCart(req.params.id);
     if (!deleted) return res.status(404).json({ success: false, message: 'Cart not found' });
     res.json({ success: true, message: 'Cart cleared' });
   } catch (error) {

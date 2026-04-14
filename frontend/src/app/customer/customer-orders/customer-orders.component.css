@@ -246,6 +246,55 @@
   background: var(--primary-dark);
 }
 
+/* Cancel button */
+.btn-cancel {
+  padding: 8px 18px;
+  background: transparent;
+  color: var(--danger);
+  border: 2px solid var(--danger);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--success);
+  color: white;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  animation: slideUp 0.25s ease;
+}
+
+.toast.toast-error {
+  background: var(--danger);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .order-meta {
@@ -255,5 +304,8 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+  .order-card-footer {
+    flex-wrap: wrap;
   }
 }

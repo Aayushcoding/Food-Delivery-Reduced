@@ -1,45 +1,26 @@
-////Menu.js
-const mongoose=require("mongoose");
+// models/Menu.js
+const mongoose = require('mongoose');
 
-const menuSchema=new mongoose.Schema({
-menuId:{
-type:String,
-required:true,
-unique:true
-},
-
-restaurantId:{
-type:String,
-required:true
-},
-
-itemName:{
-type:String,
-required:true
-},
-
-price:{
-type:Number,
-required:true
-},
-
-category:{
-type:String,
-enum:["FastFood","Indian","Chinese","Continental"]
-},
-
-rating:{
-type:Number,
-default:0
-},
-
-isAvailable:{
-type:Boolean,
-default:true
-},
-
-description:String,
-isVeg:Boolean
+const menuSchema = new mongoose.Schema({
+  menuId:       { type: String, required: true, unique: true, index: true },
+  restaurantId: { type: String, required: true, index: true },
+  itemName:     { type: String, required: true, trim: true },
+  price:        { type: Number, required: true, min: 0 },
+  category:     { type: String, default: '' },
+  rating:       { type: Number, default: 0 },
+  isAvailable:  { type: Boolean, default: true },
+  description:  { type: String, default: '' },
+  isVeg:        { type: Boolean, default: false },
+  image:        { type: String, default: '' },
+  imageUrl:     { type: String, default: '' }
+}, {
+  versionKey: false,
+  toJSON: {
+    transform(doc, ret) {
+      delete ret._id;
+      return ret;
+    }
+  }
 });
 
-module.exports=mongoose.model("Menu",menuSchema);
+module.exports = mongoose.model('Menu', menuSchema);

@@ -3,6 +3,11 @@
 <h1 class="page-title">📦 My Orders</h1>
 <p class="page-subtitle">Your complete order history</p>
 
+<!-- TOAST -->
+<div *ngIf="toastMessage" class="toast" [class.toast-error]="toastError">
+  {{ toastMessage }}
+</div>
+
 <!-- LOADING -->
 <div *ngIf="loading" class="state-box">
   <div class="state-icon">⏳</div>
@@ -49,6 +54,10 @@
           <span class="meta-value price">₹{{ order.totalAmount | number:'1.0-0' }}</span>
         </div>
         <div class="order-meta-item">
+          <span class="meta-label">Delivery Address</span>
+          <span class="meta-value">{{ order.deliveryAddress || '—' }}</span>
+        </div>
+        <div class="order-meta-item">
           <span class="meta-label">Items</span>
           <span class="meta-value">{{ order.items?.length || 0 }}</span>
         </div>
@@ -68,7 +77,22 @@
     <!-- FOOTER -->
     <div class="order-card-footer">
       <button class="btn-reorder" (click)="goHome()">🔁 Order Again</button>
+
+      <!-- Cancel button: active within 5 min of placing, expired after -->
+      <ng-container *ngIf="order.status === 'pending'">
+        <button
+          *ngIf="canCancel(order)"
+          class="btn-cancel"
+          [disabled]="cancellingId === order.id"
+          (click)="cancelOrder(order)">
+          {{ cancellingId === order.id ? 'Cancelling...' : '&#x2715; Cancel Order (' + minutesLeft(order) + ' min left)' }}
+        </button>
+        <span *ngIf="!canCancel(order)" class="cancel-expired">
+          &#x23F1; Cancel window closed
+        </span>
+      </ng-container>
     </div>
+
 
   </div>
 </div>

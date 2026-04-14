@@ -6,69 +6,104 @@
   <!-- HEADER -->
   <div class="page-header">
     <button class="back-btn" (click)="goBack()">← Dashboard</button>
-    <h1>🍴 Menu Management</h1>
+    <div class="header-title">
+      <h1>🍴 Menu Management</h1>
+      <p class="restaurant-label" *ngIf="restaurant">{{ restaurant.restaurantName }}</p>
+    </div>
     <button class="btn-add-toggle" (click)="toggleAddForm()">
       {{ showAddForm ? '✕ Cancel' : '+ Add Item' }}
     </button>
   </div>
 
-  <!-- RESTAURANT NAME -->
-  <p class="restaurant-label" *ngIf="restaurant">{{ restaurant.restaurantName }}</p>
-
   <!-- LOADING -->
   <div *ngIf="loading" class="state-box"><p>⏳ Loading menu...</p></div>
+
+  <!-- ERROR -->
+  <div *ngIf="!loading && errorMessage" class="state-box error-box">
+    <p>{{ errorMessage }}</p>
+    <button class="back-btn" (click)="goBack()">← Back to Dashboard</button>
+  </div>
 
   <!-- ADD ITEM FORM -->
   <div *ngIf="showAddForm && !loading" class="add-form-card">
     <h3>Add New Menu Item</h3>
     <div class="form-grid">
-      <input [(ngModel)]="newItem.itemName" placeholder="Item Name *" class="form-input">
-      <input [(ngModel)]="newItem.price" type="number" placeholder="Price (₹) *" class="form-input">
-      <input [(ngModel)]="newItem.category" placeholder="Category (e.g. Indian, Pizza)" class="form-input">
-      <select [(ngModel)]="newItem.isVeg" class="form-input">
+      <input [(ngModel)]="newItem.itemName" placeholder="Item Name *" class="form-input" id="new-item-name">
+      <input [(ngModel)]="newItem.price" type="number" placeholder="Price (₹) *" class="form-input" id="new-item-price">
+      <input [(ngModel)]="newItem.category" placeholder="Category (e.g. Indian, Pizza)" class="form-input" id="new-item-category">
+      <select [(ngModel)]="newItem.isVeg" class="form-input" id="new-item-veg">
         <option [ngValue]="true">🟢 Vegetarian</option>
         <option [ngValue]="false">🔴 Non-Vegetarian</option>
       </select>
     </div>
-    <input [(ngModel)]="newItem.description" placeholder="Description (optional)" class="form-input full-width">
+    <input [(ngModel)]="newItem.description" placeholder="Description (optional)" class="form-input full-width" id="new-item-desc">
+    <input [(ngModel)]="newItem.image" placeholder="Image URL (optional)" class="form-input full-width" id="new-item-image">
+    <div class="img-preview-row" *ngIf="newItem.image">
+      <img [src]="newItem.image" alt="preview"
+           onerror="this.style.display='none'"
+           style="height:80px;border-radius:8px;object-fit:cover;">
+    </div>
     <button (click)="addItem()" [disabled]="saving" class="btn-save">
       {{ saving ? 'Saving...' : 'Save Item' }}
     </button>
   </div>
 
-  <!-- MENU ITEMS COUNT -->
-  <p class="count-label" *ngIf="!loading">{{ menuItems.length }} item(s) on your menu</p>
+  <!-- COUNT -->
+  <p class="count-label" *ngIf="!loading && !errorMessage">{{ menuItems.length }} item(s) on your menu</p>
 
   <!-- EMPTY STATE -->
-  <div *ngIf="!loading && menuItems.length === 0" class="state-box">
+  <div *ngIf="!loading && !errorMessage && menuItems.length === 0" class="state-box">
     <p>No items yet. Click "+ Add Item" to get started.</p>
   </div>
 
   <!-- MENU ITEMS LIST -->
-  <div class="menu-list" *ngIf="!loading && menuItems.length > 0">
-    <div *ngFor="let item of menuItems" class="menu-card">
+  <div class="menu-list" *ngIf="!loading && !errorMessage && menuItems.length > 0">
+    <div *ngFor="let item of menuItems" class="menu-card" [class.unavailable]="!item.isAvailable">
 
-      <!-- VEG BADGE -->
-      <span class="veg-dot" [class.nonveg]="!item.isVeg">{{ item.isVeg ? '🟢' : '🔴' }}</span>
+      <!-- ITEM IMAGE -->
+      <div class="menu-card-img">
+        <img [src]="imgOf(item)" [alt]="item.itemName"
+             onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=200&fit=crop'">
+        <span class="veg-dot" [class.nonveg]="!item.isVeg">{{ item.isVeg ? '🟢' : '🔴' }}</span>
+        <span *ngIf="!item.isAvailable" class="unavail-badge">Unavailable</span>
+      </div>
 
-      <div class="menu-card-body">
+      <!-- NORMAL VIEW -->
+      <div class="menu-card-body" *ngIf="editingId !== item.menuId">
         <h3 class="item-name">{{ item.itemName }}</h3>
         <p class="item-category">{{ item.category }}</p>
         <p class="item-desc" *ngIf="item.description">{{ item.description }}</p>
-
-        <!-- PRICE DISPLAY / EDIT -->
-        <div class="price-row" *ngIf="editingId !== item.menuId">
+        <div class="price-row">
           <span class="item-price">₹{{ item.price }}</span>
-          <button class="btn-edit" (click)="startEdit(item)">✏️ Edit Price</button>
+          <div class="item-actions">
+            <button class="btn-toggle" (click)="toggleAvailability(item)" [title]="item.isAvailable ? 'Deactivate' : 'Activate'">
+              {{ item.isAvailable ? '🔕' : '✅' }}
+            </button>
+            <button class="btn-edit" (click)="startEdit(item)">✏️ Edit</button>
+            <button class="btn-delete" (click)="deleteItem(item)">🗑</button>
+          </div>
         </div>
-        <div class="price-row" *ngIf="editingId === item.menuId">
-          <input [(ngModel)]="editPrice" type="number" class="price-input">
-          <button class="btn-save-small" (click)="saveEdit(item)">Save</button>
+      </div>
+
+      <!-- EDIT VIEW -->
+      <div class="menu-card-body" *ngIf="editingId === item.menuId">
+        <div class="edit-grid">
+          <input [(ngModel)]="editData.itemName" placeholder="Name" class="edit-input" id="edit-name">
+          <input [(ngModel)]="editData.price" type="number" placeholder="Price" class="edit-input" id="edit-price">
+          <input [(ngModel)]="editData.category" placeholder="Category" class="edit-input" id="edit-category">
+          <select [(ngModel)]="editData.isVeg" class="edit-input" id="edit-veg">
+            <option [ngValue]="true">🟢 Veg</option>
+            <option [ngValue]="false">🔴 Non-Veg</option>
+          </select>
+        </div>
+        <input [(ngModel)]="editData.description" placeholder="Description" class="edit-input full" id="edit-desc">
+        <input [(ngModel)]="editData.image" placeholder="Image URL" class="edit-input full" id="edit-image">
+        <div class="edit-actions">
+          <button class="btn-save-small" (click)="saveEdit(item)">✅ Save</button>
           <button class="btn-cancel-small" (click)="cancelEdit()">Cancel</button>
         </div>
       </div>
 
-      <button class="btn-delete" (click)="deleteItem(item)">🗑</button>
     </div>
   </div>
 

@@ -45,10 +45,13 @@ const token = this.getToken() || '';
 return new HttpHeaders({ 'x-auth-token': token });
 }
 
-// ✅ Logout user — removes BOTH user and token
+// ✅ Logout user — removes BOTH user and token, clears any cached session state
 logout():void{
-localStorage.removeItem('user');
-localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
+  // Clear owner session state so a new login gets a clean slate
+  sessionStorage.removeItem('ownerRestaurantId');
+  sessionStorage.removeItem('ownerRestaurantName');
 }
 
 // ✅ Save user and token (called after successful login)

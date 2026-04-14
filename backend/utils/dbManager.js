@@ -1,469 +1,261 @@
-const fs = require('fs');
-const path = require('path');
+// utils/dbManager.js
+// ─────────────────────────────────────────────────────────────────────────────
+// MongoDB data access layer — all operations use Mongoose models.
+// All functions are async (Promise-based). Controllers must await these calls.
+// ─────────────────────────────────────────────────────────────────────────────
 
-const DB_PATH = path.join(__dirname, '../config/db.json');
 
-// ────────────────────────────────────────────────────────────────────
-// READ & WRITE DATABASE
-// ────────────────────────────────────────────────────────────────────
+const User         = require('../models/User');
+const Restaurant   = require('../models/Restaurant');
+const Menu         = require('../models/Menu');
+const Cart         = require('../models/Cart');
+const Order        = require('../models/Order');
+const DeliveryAgent= require('../models/DeliveryAgent');
 
-const readDB = () => {
-  try {
-    const data = fs.readFileSync(DB_PATH, 'utf8');
-    return JSON.parse(data);
-  } catch (err) {
-    console.error('Error reading db.json:', err);
-    return { users: [], restaurants: [], menus: [], carts: [], orders: [], deliveryAgents: [] };
-  }
+// ─── Strip MongoDB internals from plain objects returned by .lean() ───────────
+const strip = (doc) => {
+  if (!doc) return doc;
+  const obj = { ...doc };
+  delete obj._id;
+  delete obj.__v;
+  return obj;
 };
+const stripMany = (docs) => docs.map(strip);
 
-const writeDB = (data) => {
-  try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
-  } catch (err) {
-    console.error('Error writing db.json:', err);
-    throw new Error('Database write failed: ' + err.message);
-  }
-};
+// ─── ID generators ───────────────────────────────────────────────────────────
+const genUserId           = () => `usr_${Date.now().toString(36)}`;
+const genRestaurantId     = () => `rest_${Date.now().toString(36)}`;
+const genMenuId           = () => `menu_${Date.now().toString(36)}`;
+const genCartId           = () => `cart_${Date.now().toString(36)}`;
+const genOrderId          = () => `ord_${Date.now().toString(36)}`;
+const genDeliveryAgentId  = () => `da_${Date.now().toString(36)}`;
 
-// ────────────────────────────────────────────────────────────────────
-// USERS OPERATIONS
-// ────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// USERS
+// ─────────────────────────────────────────────────────────────────────────────
 
-const getUser = (id) => {
-  const db = readDB();
-  return db.users.find(u => u.id === id);
-};
+const getUser = (id) =>
+  User.findOne({ id }).lean().then(strip);
 
-const getUserByEmail = (email) => {
-  const db = readDB();
-  return db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-};
+const getUserByEmail = (email) =>
+  User.findOne({ email: email.toLowerCase() }).lean().then(strip);
 
-const getAllUsers = () => {
-  const db = readDB();
-  return db.users.map(u => {
-    const copy = { ...u };
-    delete copy.password;
-    return copy;
+// Find a user by BOTH email and role — needed when same email has multiple roles
+const getUserByEmailAndRole = (email, role) =>
+  User.findOne({ email: email.toLowerCase(), role }).lean().then(strip);
+
+
+const getAllUsers = () =>
+  User.find({}).lean().then(stripMany);
+
+const createUser = async (userData) => {
+  const user = new User({
+    id:        userData.id || genUserId(),
+    username:  userData.username,
+    email:     userData.email.toLowerCase(),
+    password:  userData.password,
+    phoneNo:   userData.phoneNo || '',
+    address:   userData.address || [],
+    role:      userData.role || 'Customer',
+    createdAt: userData.createdAt || new Date().toISOString()
   });
+  const saved = await user.save();
+  return saved.toObject({ transform: false, versionKey: false });
 };
 
-const createUser = (userData) => {
-  const db = readDB();
-  const newUser = {
-    id: userData.id || `usr_${String(db.users.length + 1).padStart(3, '0')}`,
-    username: userData.username,
-    email: userData.email,
-    password: userData.password,
-    phoneNo: userData.phoneNo,
-    address: userData.address || [],
-    role: userData.role || 'Customer',
-    createdAt: new Date().toISOString()
-  };
-  db.users.push(newUser);
-  writeDB(db);
-  return newUser;
+const updateUser = (id, updates) =>
+  User.findOneAndUpdate({ id }, updates, { new: true }).lean().then(strip);
+
+const deleteUser = (id) =>
+  User.findOneAndDelete({ id }).lean().then(strip);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RESTAURANTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getRestaurant = (restaurantId) =>
+  Restaurant.findOne({ restaurantId }).lean().then(strip);
+
+const getRestaurantByOwnerId = (ownerId) =>
+  Restaurant.find({ ownerId }).lean().then(stripMany);
+
+const getAllRestaurants = () =>
+  Restaurant.find({}).lean().then(stripMany);
+
+const createRestaurant = async (data) => {
+  const restaurant = new Restaurant({
+    restaurantId:        data.restaurantId || genRestaurantId(),
+    restaurantName:      data.restaurantName,
+    ownerId:             data.ownerId,
+    restaurantContactNo: data.restaurantContactNo || '',
+    address:             data.address || '',
+    email:               data.email || '',
+    cuisine:             data.cuisine || [],
+    isVeg:               data.isVeg || false,
+    rating:              data.rating || 0,
+    gstinNo:             data.gstinNo || '',
+    displayImage:        data.displayImage || data.imageUrl || '',
+    imageUrl:            data.imageUrl || data.displayImage || ''
+  });
+  const saved = await restaurant.save();
+  return saved.toObject({ transform: false, versionKey: false });
 };
 
-const updateUser = (id, updates) => {
-  const db = readDB();
-  const user = db.users.find(u => u.id === id);
-  if (!user) return null;
-  
-  Object.assign(user, updates);
-  writeDB(db);
-  return user;
+const updateRestaurant = (restaurantId, updates) =>
+  Restaurant.findOneAndUpdate({ restaurantId }, updates, { new: true }).lean().then(strip);
+
+const deleteRestaurant = (restaurantId) =>
+  Restaurant.findOneAndDelete({ restaurantId }).lean().then(strip);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MENU
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getMenuItem = (menuId) =>
+  Menu.findOne({ menuId }).lean().then(strip);
+
+const getMenuByRestaurant = (restaurantId) =>
+  Menu.find({ restaurantId }).lean().then(stripMany);
+
+const getAllMenus = () =>
+  Menu.find({}).lean().then(stripMany);
+
+const createMenuItem = async (data) => {
+  const item = new Menu({
+    menuId:       data.menuId || genMenuId(),
+    restaurantId: data.restaurantId,
+    itemName:     data.itemName,
+    price:        data.price,
+    category:     data.category || '',
+    rating:       data.rating || 0,
+    isAvailable:  data.isAvailable !== undefined ? data.isAvailable : true,
+    description:  data.description || '',
+    isVeg:        data.isVeg || false,
+    image:        data.image || data.imageUrl || '',
+    imageUrl:     data.imageUrl || data.image || ''
+  });
+  const saved = await item.save();
+  return saved.toObject({ transform: false, versionKey: false });
 };
 
-const deleteUser = (id) => {
-  const db = readDB();
-  const index = db.users.findIndex(u => u.id === id);
-  if (index === -1) return null;
-  
-  const deleted = db.users.splice(index, 1);
-  writeDB(db);
-  return deleted[0];
+const updateMenuItem = (menuId, updates) =>
+  Menu.findOneAndUpdate({ menuId }, updates, { new: true }).lean().then(strip);
+
+const deleteMenuItem = (menuId) =>
+  Menu.findOneAndDelete({ menuId }).lean().then(strip);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CART
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getCart = (id) =>
+  Cart.findOne({ id }).lean().then(strip);
+
+const getCartByUserId = (userId) =>
+  Cart.findOne({ userId }).sort({ createdAt: -1 }).lean().then(strip);
+
+const getAllCarts = () =>
+  Cart.find({}).lean().then(stripMany);
+
+const createCart = async (data) => {
+  const cart = new Cart({
+    id:           data.id || genCartId(),
+    userId:       data.userId,
+    restaurantId: data.restaurantId || '',
+    items:        data.items || [],
+    totalAmount:  data.totalAmount || 0,
+    createdAt:    data.createdAt || new Date().toISOString(),
+    updatedAt:    new Date().toISOString()
+  });
+  const saved = await cart.save();
+  return saved.toObject({ transform: false, versionKey: false });
 };
 
-// ────────────────────────────────────────────────────────────────────
-// RESTAURANTS OPERATIONS
-// ────────────────────────────────────────────────────────────────────
-
-const getRestaurant = (restaurantId) => {
-  const db = readDB();
-  return db.restaurants.find(r => r.restaurantId === restaurantId);
+const updateCart = (id, updates) => {
+  updates.updatedAt = new Date().toISOString();
+  return Cart.findOneAndUpdate({ id }, updates, { new: true }).lean().then(strip);
 };
 
-const getRestaurantByOwnerId = (ownerId) => {
-  const db = readDB();
-  return db.restaurants.find(r => r.ownerId === ownerId);
+const deleteCart = (id) =>
+  Cart.findOneAndDelete({ id }).lean().then(strip);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ORDERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getOrder = (id) =>
+  Order.findOne({ id }).lean().then(strip);
+
+const getOrdersByUserId = (userId) =>
+  Order.find({ userId }).sort({ createdAt: -1 }).lean().then(stripMany);
+
+const getOrdersByRestaurantId = (restaurantId) =>
+  Order.find({ restaurantId }).sort({ createdAt: -1 }).lean().then(stripMany);
+
+const getAllOrders = () =>
+  Order.find({}).lean().then(stripMany);
+
+const createOrder = async (data) => {
+  const order = new Order({
+    id:              data.id || genOrderId(),
+    userId:          data.userId,
+    restaurantId:    data.restaurantId || '',
+    items:           data.items || [],
+    totalAmount:     data.totalAmount || 0,
+    deliveryAddress: data.deliveryAddress || '',
+    status:          data.status || 'pending',
+    createdAt:       data.createdAt || new Date().toISOString()
+  });
+  const saved = await order.save();
+  return saved.toObject({ transform: false, versionKey: false });
 };
 
-const getAllRestaurants = () => {
-  const db = readDB();
-  return db.restaurants;
+const updateOrder = (id, updates) =>
+  Order.findOneAndUpdate({ id }, updates, { new: true }).lean().then(strip);
+
+const deleteOrder = (id) =>
+  Order.findOneAndDelete({ id }).lean().then(strip);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DELIVERY AGENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getAllDeliveryAgents = () =>
+  DeliveryAgent.find({}).lean().then(stripMany);
+
+const getDeliveryAgent = (id) =>
+  DeliveryAgent.findOne({ id }).lean().then(strip);
+
+const createDeliveryAgent = async (data) => {
+  const agent = new DeliveryAgent({
+    id:          data.id || genDeliveryAgentId(),
+    name:        data.name || '',
+    email:       data.email || '',
+    phoneNo:     data.phoneNo || '',
+    isAvailable: data.isAvailable !== undefined ? data.isAvailable : true
+  });
+  const saved = await agent.save();
+  return saved.toObject({ transform: false, versionKey: false });
 };
 
-const createRestaurant = (restaurantData) => {
-  const db = readDB();
-  const newRestaurant = {
-    restaurantId: restaurantData.restaurantId || `rest_${String(db.restaurants.length + 1).padStart(3, '0')}`,
-    ownerId: restaurantData.ownerId,
-    restaurantName: restaurantData.restaurantName,
-    address: restaurantData.address || '',
-    restaurantContactNo: restaurantData.restaurantContactNo,
-    email: restaurantData.email,
-    gstinNo: restaurantData.gstinNo || '',
-    cuisine: restaurantData.cuisine || [],
-    isVeg: restaurantData.isVeg || false,
-    rating: restaurantData.rating || 0,
-    createdAt: new Date().toISOString()
-  };
-  db.restaurants.push(newRestaurant);
-  writeDB(db);
-  return newRestaurant;
-};
+const updateDeliveryAgent = (id, updates) =>
+  DeliveryAgent.findOneAndUpdate({ id }, updates, { new: true }).lean().then(strip);
 
-const updateRestaurant = (restaurantId, updates) => {
-  const db = readDB();
-  const restaurant = db.restaurants.find(r => r.restaurantId === restaurantId);
-  if (!restaurant) return null;
-  
-  Object.assign(restaurant, updates);
-  writeDB(db);
-  return restaurant;
-};
+const deleteDeliveryAgent = (id) =>
+  DeliveryAgent.findOneAndDelete({ id }).lean().then(strip);
 
-const deleteRestaurant = (restaurantId) => {
-  const db = readDB();
-  const index = db.restaurants.findIndex(r => r.restaurantId === restaurantId);
-  if (index === -1) return null;
-  
-  const deleted = db.restaurants.splice(index, 1);
-  writeDB(db);
-  return deleted[0];
-};
-
-// ────────────────────────────────────────────────────────────────────
-// MENUS OPERATIONS
-// ────────────────────────────────────────────────────────────────────
-
-const getMenuItem = (menuId) => {
-  const db = readDB();
-  return db.menus.find(m => m.menuId === menuId);
-};
-
-const getMenuByRestaurant = (restaurantId) => {
-  const db = readDB();
-  return db.menus.filter(m => m.restaurantId === restaurantId);
-};
-
-const getAllMenus = () => {
-  const db = readDB();
-  return db.menus;
-};
-
-const createMenuItem = (menuData) => {
-  const db = readDB();
-  const newMenu = {
-    menuId: menuData.menuId || `menu_${String(db.menus.length + 1).padStart(3, '0')}`,
-    restaurantId: menuData.restaurantId,
-    itemName: menuData.itemName,
-    price: menuData.price,
-    description: menuData.description || '',
-    isVeg: menuData.isVeg || false,
-    category: menuData.category,
-    isAvailable: menuData.isAvailable !== false,
-    rating: menuData.rating || 0,
-    createdAt: new Date().toISOString()
-  };
-  db.menus.push(newMenu);
-  writeDB(db);
-  return newMenu;
-};
-
-const updateMenuItem = (menuId, updates) => {
-  const db = readDB();
-  const menu = db.menus.find(m => m.menuId === menuId);
-  if (!menu) return null;
-  
-  Object.assign(menu, updates);
-  writeDB(db);
-  return menu;
-};
-
-const deleteMenuItem = (menuId) => {
-  const db = readDB();
-  const index = db.menus.findIndex(m => m.menuId === menuId);
-  if (index === -1) return null;
-  
-  const deleted = db.menus.splice(index, 1);
-  writeDB(db);
-  return deleted[0];
-};
-
-// ────────────────────────────────────────────────────────────────────
-// CARTS OPERATIONS
-// ────────────────────────────────────────────────────────────────────
-
-const getCart = (cartId) => {
-  const db = readDB();
-  return db.carts.find(c => c.id === cartId);
-};
-
-const getCartByUserId = (userId) => {
-  const db = readDB();
-  return db.carts.find(c => c.userId === userId);
-};
-
-const getAllCarts = () => {
-  const db = readDB();
-  return db.carts;
-};
-
-const createCart = (cartData) => {
-  const db = readDB();
-  
-  // Check if cart already exists for this user
-  const existing = db.carts.find(c => c.userId === cartData.userId && c.restaurantId === cartData.restaurantId);
-  if (existing) {
-    return existing;
-  }
-  
-  const newCart = {
-    id: cartData.id || `cart_${String(db.carts.length + 1).padStart(3, '0')}`,
-    userId: cartData.userId,
-    restaurantId: cartData.restaurantId,
-    items: cartData.items || [],
-    totalAmount: cartData.totalAmount || 0,
-    createdAt: new Date().toISOString()
-  };
-  db.carts.push(newCart);
-  writeDB(db);
-  return newCart;
-};
-
-const updateCart = (cartId, updates) => {
-  const db = readDB();
-  const cart = db.carts.find(c => c.id === cartId);
-  if (!cart) return null;
-  
-  Object.assign(cart, updates);
-  writeDB(db);
-  return cart;
-};
-
-const addItemToCart = (cartId, item) => {
-  const db = readDB();
-  const cart = db.carts.find(c => c.id === cartId);
-  if (!cart) return null;
-  
-  const existingIndex = cart.items.findIndex(i => i.itemId === item.itemId);
-  if (existingIndex !== -1) {
-    cart.items[existingIndex].quantity += item.quantity;
-  } else {
-    cart.items.push(item);
-  }
-  
-  cart.totalAmount = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-  writeDB(db);
-  return cart;
-};
-
-const removeItemFromCart = (cartId, itemId) => {
-  const db = readDB();
-  const cart = db.carts.find(c => c.id === cartId);
-  if (!cart) return null;
-  
-  cart.items = cart.items.filter(i => i.itemId !== itemId);
-  cart.totalAmount = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-  writeDB(db);
-  return cart;
-};
-
-const clearCart = (cartId) => {
-  const db = readDB();
-  const cart = db.carts.find(c => c.id === cartId);
-  if (!cart) return null;
-  
-  cart.items = [];
-  cart.totalAmount = 0;
-  writeDB(db);
-  return cart;
-};
-
-const deleteCart = (cartId) => {
-  const db = readDB();
-  const index = db.carts.findIndex(c => c.id === cartId);
-  if (index === -1) return null;
-  
-  const deleted = db.carts.splice(index, 1);
-  writeDB(db);
-  return deleted[0];
-};
-
-// ────────────────────────────────────────────────────────────────────
-// ORDERS OPERATIONS
-// ────────────────────────────────────────────────────────────────────
-
-const getOrder = (orderId) => {
-  const db = readDB();
-  return db.orders.find(o => o.id === orderId);
-};
-
-const getOrdersByUserId = (userId) => {
-  const db = readDB();
-  return db.orders.filter(o => o.userId === userId);
-};
-
-const getAllOrders = () => {
-  const db = readDB();
-  return db.orders;
-};
-
-const createOrder = (orderData) => {
-  const db = readDB();
-  const newOrder = {
-    id: orderData.id || `order_${String(db.orders.length + 1).padStart(3, '0')}`,
-    userId: orderData.userId,
-    restaurantId: orderData.restaurantId,
-    items: orderData.items || [],
-    totalAmount: orderData.totalAmount || 0,
-    deliveryAddress: orderData.deliveryAddress || {},
-    status: orderData.status || 'pending',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  db.orders.push(newOrder);
-  writeDB(db);
-  return newOrder;
-};
-
-const updateOrder = (orderId, updates) => {
-  const db = readDB();
-  const order = db.orders.find(o => o.id === orderId);
-  if (!order) return null;
-  
-  Object.assign(order, updates, { updatedAt: new Date().toISOString() });
-  writeDB(db);
-  return order;
-};
-
-const deleteOrder = (orderId) => {
-  const db = readDB();
-  const index = db.orders.findIndex(o => o.id === orderId);
-  if (index === -1) return null;
-  
-  const deleted = db.orders.splice(index, 1);
-  writeDB(db);
-  return deleted[0];
-};
-
-// ────────────────────────────────────────────────────────────────────
-// DELIVERY AGENTS OPERATIONS
-// ────────────────────────────────────────────────────────────────────
-
-const getDeliveryAgent = (agentId) => {
-  const db = readDB();
-  return db.deliveryAgents.find(a => a.id === agentId);
-};
-
-const getAllDeliveryAgents = () => {
-  const db = readDB();
-  return db.deliveryAgents;
-};
-
-const createDeliveryAgent = (agentData) => {
-  const db = readDB();
-  const newAgent = {
-    id: agentData.id || `agent_${String(db.deliveryAgents.length + 1).padStart(3, '0')}`,
-    name: agentData.name,
-    phone: agentData.phone,
-    status: agentData.status || 'available',
-    currentLocation: agentData.currentLocation || {},
-    createdAt: new Date().toISOString()
-  };
-  db.deliveryAgents.push(newAgent);
-  writeDB(db);
-  return newAgent;
-};
-
-const updateDeliveryAgent = (agentId, updates) => {
-  const db = readDB();
-  const agent = db.deliveryAgents.find(a => a.id === agentId);
-  if (!agent) return null;
-  
-  Object.assign(agent, updates);
-  writeDB(db);
-  return agent;
-};
-
-const deleteDeliveryAgent = (agentId) => {
-  const db = readDB();
-  const index = db.deliveryAgents.findIndex(a => a.id === agentId);
-  if (index === -1) return null;
-  
-  const deleted = db.deliveryAgents.splice(index, 1);
-  writeDB(db);
-  return deleted[0];
-};
-
-// ────────────────────────────────────────────────────────────────────
-// EXPORTS
-// ────────────────────────────────────────────────────────────────────
-
+// ─────────────────────────────────────────────────────────────────────────────
 module.exports = {
-  readDB,
-  writeDB,
-  
   // Users
-  getUser,
-  getUserByEmail,
-  getAllUsers,
-  createUser,
-  updateUser,
-  deleteUser,
-  
+  getUser, getUserByEmail, getUserByEmailAndRole, getAllUsers, createUser, updateUser, deleteUser,
   // Restaurants
-  getRestaurant,
-  getRestaurantByOwnerId,
-  getAllRestaurants,
-  createRestaurant,
-  updateRestaurant,
-  deleteRestaurant,
-  
-  // Menus
-  getMenuItem,
-  getMenuByRestaurant,
-  getAllMenus,
-  createMenuItem,
-  updateMenuItem,
-  deleteMenuItem,
-  
-  // Carts
-  getCart,
-  getCartByUserId,
-  getAllCarts,
-  createCart,
-  updateCart,
-  addItemToCart,
-  removeItemFromCart,
-  clearCart,
-  deleteCart,
-  
+  getRestaurant, getRestaurantByOwnerId, getAllRestaurants, createRestaurant, updateRestaurant, deleteRestaurant,
+  // Menu
+  getMenuItem, getMenuByRestaurant, getAllMenus, createMenuItem, updateMenuItem, deleteMenuItem,
+  // Cart
+  getCart, getCartByUserId, getAllCarts, createCart, updateCart, deleteCart,
   // Orders
-  getOrder,
-  getOrdersByUserId,
-  getAllOrders,
-  createOrder,
-  updateOrder,
-  deleteOrder,
-  
+  getOrder, getOrdersByUserId, getOrdersByRestaurantId, getAllOrders, createOrder, updateOrder, deleteOrder,
   // Delivery Agents
-  getDeliveryAgent,
-  getAllDeliveryAgents,
-  createDeliveryAgent,
-  updateDeliveryAgent,
-  deleteDeliveryAgent
+  getAllDeliveryAgents, getDeliveryAgent, createDeliveryAgent, updateDeliveryAgent, deleteDeliveryAgent
 };

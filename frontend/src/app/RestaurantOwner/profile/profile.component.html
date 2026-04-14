@@ -1,1 +1,103 @@
-<p>profile works!</p>
+<div class="owner-profile-page">
+
+  <!-- TOAST -->
+  <div *ngIf="toastMessage" class="toast" [class.toast-error]="toastError">{{ toastMessage }}</div>
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <button class="btn-back" (click)="goBack()" id="btn-back">← Dashboard</button>
+    <h1 class="page-title">👤 My Profile</h1>
+  </div>
+
+  <!-- LOADING -->
+  <div *ngIf="loading || restaurantsLoading" class="state-center">
+    <div class="spinner"></div>
+    <p>Loading profile...</p>
+  </div>
+
+  <div *ngIf="!loading && !restaurantsLoading && user" class="page-content">
+
+    <!-- PROFILE HEADER CARD -->
+    <div class="profile-header-card">
+      <div class="avatar-circle">
+        {{ user.username?.charAt(0)?.toUpperCase() || 'O' }}
+      </div>
+      <div class="header-info">
+        <h2 class="owner-name">{{ user.username }}</h2>
+        <span class="role-badge">🏪 Restaurant Owner</span>
+        <p class="owner-email">{{ user.email }}</p>
+      </div>
+      <button class="btn-edit-icon" (click)="startEdit()" *ngIf="!editing" id="btn-start-edit">✏️ Edit</button>
+    </div>
+
+    <!-- VIEW MODE -->
+    <div class="info-card" *ngIf="!editing">
+      <h3 class="card-title">Personal Information</h3>
+      <div class="info-grid">
+        <div class="info-row">
+          <span class="info-label">Full Name</span>
+          <span class="info-value">{{ user.username || '—' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Email</span>
+          <span class="info-value">{{ user.email || '—' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Phone</span>
+          <span class="info-value">{{ user.phoneNo || '—' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Member Since</span>
+          <span class="info-value">{{ (user.createdAt | date:'mediumDate') || '—' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDIT MODE -->
+    <div class="info-card" *ngIf="editing">
+      <h3 class="card-title">✏️ Edit Profile</h3>
+      <div class="edit-form">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input [(ngModel)]="editData.username" placeholder="Your name" class="form-input" id="edit-name">
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input [(ngModel)]="editData.phoneNo" placeholder="e.g. 9876543210" class="form-input" id="edit-phone">
+        </div>
+        <div class="form-actions">
+          <button class="btn-save" (click)="save()" [disabled]="saving" id="btn-save">
+            {{ saving ? 'Saving...' : '✅ Save Changes' }}
+          </button>
+          <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESTAURANTS SECTION -->
+    <div class="restaurants-card" *ngIf="restaurants.length > 0">
+      <h3 class="card-title">🏪 My Restaurants
+        <span class="count-pill">{{ restaurants.length }}</span>
+      </h3>
+      <div class="rest-list">
+        <div *ngFor="let rest of restaurants" class="rest-row" (click)="goToRestaurant(rest)">
+          <img [src]="imgOf(rest)" [alt]="rest.restaurantName"
+               onerror="this.src='https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=60&h=60&fit=crop'"
+               class="rest-thumb">
+          <div class="rest-info">
+            <span class="rest-name">{{ rest.restaurantName }}</span>
+            <span class="rest-cuisine">{{ getCuisine(rest) || 'Various' }}</span>
+            <span class="rest-address" *ngIf="rest.address">📍 {{ rest.address }}</span>
+          </div>
+          <span class="rest-arrow">→</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="restaurants-card empty-rest" *ngIf="restaurants.length === 0">
+      <p>No restaurants yet. <a (click)="goBack()">Create one from the dashboard.</a></p>
+    </div>
+
+  </div>
+
+</div>

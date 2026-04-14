@@ -3,142 +3,179 @@ const bcrypt = require('bcryptjs');
 const db = require('../utils/dbManager');
 
 // ================= REGISTER CUSTOMER =================
-const registerCustomer = async(req, res) => {
+const registerCustomer = async (req, res) => {
   try {
-    const { username, email, password, phoneNo } = req.body;
+    const { username, email, password, phoneNo, address } = req.body;
 
     if (!username || !email || !password) {
-      return res.status(400).json({ success: false, message: "username, email, and password are required" });
+      return res.status(400).json({
+        success: false,
+        message: 'username, email, and password are required'
+      });
     }
 
-    // Check if email already exists
-    const existing = db.getUserByEmail(email);
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters'
+      });
+    }
+
+    // Check uniqueness by email + role (same email can exist as Owner)
+    const existing = await db.getUserByEmailAndRole(email, 'Customer');
     if (existing) {
-      return res.status(400).json({ success: false, message: "Email already exists" });
+      return res.status(400).json({
+        success: false,
+        message: 'A Customer account with this email already exists'
+      });
     }
 
-    // Hash password
     const hashed = await bcrypt.hash(password, 10);
 
-    // Create user
-    const user = db.createUser({
-      username,
-      email: email.toLowerCase(),
-      password: hashed,
-      phoneNo,
-      role: "Customer"
+    const user = await db.createUser({
+      username:  username.trim(),
+      email:     email.toLowerCase().trim(),
+      password:  hashed,
+      phoneNo:   phoneNo || '',
+      address:   address || [],
+      role:      'Customer'
     });
 
     const userObj = { ...user };
     delete userObj.password;
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: "Customer registered successfully",
+      message: 'Customer registered successfully',
       data: userObj
     });
 
-  } catch(err) {
-    res.status(500).json({ success: false, message: err.message });
+  } catch (err) {
+    console.error('[registerCustomer]', err.message);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
 // ================= REGISTER OWNER =================
-const registerOwner = async(req, res) => {
+// NOTE: Owner registers with credentials only.
+// Restaurants are created from the owner dashboard after login.
+const registerOwner = async (req, res) => {
   try {
-    const { username, email, password, phoneNo, restaurantName, restaurantAddress, gstinNo } = req.body;
+    const { username, email, password, phoneNo, address } = req.body;
 
-    if (!username || !email || !password || !restaurantName) {
-      return res.status(400).json({ success: false, message: "username, email, password, and restaurantName are required" });
+    if (!username || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'username, email, and password are required'
+      });
     }
 
-    // Check if email already exists
-    const existing = db.getUserByEmail(email);
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters'
+      });
+    }
+
+    // Check uniqueness by email + role (same email can exist as Customer)
+    const existing = await db.getUserByEmailAndRole(email, 'Owner');
     if (existing) {
-      return res.status(400).json({ success: false, message: "Email already exists" });
+      return res.status(400).json({
+        success: false,
+        message: 'An Owner account with this email already exists'
+      });
     }
 
-    // Hash password
     const hashed = await bcrypt.hash(password, 10);
 
-    // Create user
-    const user = db.createUser({
-      username,
-      email: email.toLowerCase(),
-      password: hashed,
-      phoneNo,
-      role: "Owner"
-    });
-
-    // Create restaurant for owner
-    const restaurant = db.createRestaurant({
-      ownerId: user.id,
-      restaurantName,
-      address: restaurantAddress,
-      restaurantContactNo: phoneNo,
-      email: user.email,
-      gstinNo
+    const user = await db.createUser({
+      username:  username.trim(),
+      email:     email.toLowerCase().trim(),
+      password:  hashed,
+      phoneNo:   phoneNo || '',
+      address:   address || [],
+      role:      'Owner'
     });
 
     const userObj = { ...user };
     delete userObj.password;
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: "Owner registered successfully",
-      data: {
-        user: userObj,
-        restaurant
-      }
+      message: 'Owner registered successfully. You can now create your restaurant from the dashboard.',
+      data: userObj
     });
 
-  } catch(err) {
-    res.status(500).json({ success: false, message: err.message });
+  } catch (err) {
+    console.error('[registerOwner]', err.message);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
 // ================= LOGIN =================
-const login = async(req, res) => {
+// Requires: email + password + role
+// The role field differentiates between Customer and Owner accounts
+// that share the same email address.
+const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
-    // Validation
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: "Email and password are required" });
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
     }
 
-    if (email.trim().length === 0 || password.trim().length === 0) {
-      return res.status(400).json({ success: false, message: "Email and password cannot be empty" });
+    if (!role) {
+      return res.status(400).json({
+        success: false,
+        message: 'Role is required. Please select Customer or Owner.'
+      });
     }
 
-    // Find user by email
-    const user = db.getUserByEmail(email);
+    const allowedRoles = ['Customer', 'Owner', 'DeliveryAgent', 'Admin'];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid role. Allowed values: ${allowedRoles.join(', ')}`
+      });
+    }
+
+    // Look up user by BOTH email and role
+    const user = await db.getUserByEmailAndRole(email.trim(), role);
     if (!user) {
-      return res.status(401).json({ success: false, message: "Invalid email or password" });
+      return res.status(401).json({
+        success: false,
+        message: `No ${role} account found with this email`
+      });
     }
 
-    // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Invalid email or password" });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
     }
 
-    // Generate simple token (can be extended to JWT)
+    // Token format: logged-in-<userId>-<timestamp>  (no JWT as per project rules)
     const token = `logged-in-${user.id}-${Date.now()}`;
 
-    // Return user without password
     const userObj = { ...user };
     delete userObj.password;
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Login successful",
-      data: userObj,
-      token: token
+      message: 'Login successful',
+      data:    userObj,
+      token:   token,
+      role:    user.role
     });
 
-  } catch(err) {
-    res.status(500).json({ success: false, message: err.message });
+  } catch (err) {
+    console.error('[login]', err.message);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 

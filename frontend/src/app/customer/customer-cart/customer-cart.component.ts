@@ -14,6 +14,8 @@ export class CustomerCartComponent implements OnInit {
   // Each item: { itemId, name, itemName, price, quantity }
   cartItems: any[] = [];
   cartId: string = '';
+  /** totalAmount from backend — the authoritative total */
+  backendTotal: number = 0;
   loading: boolean = false;
   cartLoading: boolean = false;
   errorMessage: string = '';
@@ -44,6 +46,7 @@ export class CustomerCartComponent implements OnInit {
         this.cartLoading = false;
         if (res.success && res.data) {
           this.cartId = res.data.id;
+          this.backendTotal = res.data.totalAmount || 0;
           // Backend stores 'name' in cart items — map to itemName for template
           this.cartItems = (res.data.items || []).map((item: any) => ({
             ...item,
@@ -51,6 +54,7 @@ export class CustomerCartComponent implements OnInit {
           }));
         } else {
           this.cartItems = [];
+          this.backendTotal = 0;
         }
       },
       error: (err) => {
@@ -64,8 +68,9 @@ export class CustomerCartComponent implements OnInit {
   }
 
   // ── TOTALS ─────────────────────────────────────────────────────────
+  /** Use backend total as source of truth to avoid frontend/price drift */
   get total(): number {
-    return this.cartItems.reduce((sum, i) => sum + (i.price || 0) * (i.quantity || 1), 0);
+    return this.backendTotal || this.cartItems.reduce((sum, i) => sum + (i.price || 0) * (i.quantity || 1), 0);
   }
 
   get itemCount(): number {

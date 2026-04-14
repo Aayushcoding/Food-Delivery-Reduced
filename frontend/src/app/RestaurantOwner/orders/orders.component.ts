@@ -10,6 +10,7 @@ import { CustomerService } from '../../core/services/customer.service';
 })
 export class OrdersComponent implements OnInit {
 
+  restaurantName = '';
   orders: any[] = [];
   loading = true;
   errorMessage = '';
@@ -29,33 +30,54 @@ export class OrdersComponent implements OnInit {
     const owner = this.authService.getUser();
     if (!owner) { this.router.navigate(['/login']); return; }
 
-    this.customerService.getRestaurantByOwner(owner.id).subscribe({
-      next: (res) => {
-        if (res.success && res.data) {
-          this.loadOrders(res.data.restaurantId);
-        } else {
-          this.errorMessage = 'No restaurant found.';
-          this.loading = false;
-        }
-      },
-      error: () => { this.errorMessage = 'Failed to load restaurant.'; this.loading = false; }
-    });
+    // 1. Try router navigation state
+    const nav = this.router.getCurrentNavigation();
+    const state = nav?.extras?.state as any;
+
+    let restaurantId: string | null = null;
+
+    if (state?.restaurantId) {
+      restaurantId = state.restaurantId;
+      this.restaurantName = state.restaurantName || '';
+      sessionStorage.setItem('ownerRestaurantId', restaurantId!);
+      sessionStorage.setItem('ownerRestaurantName', this.restaurantName);
+    } else {
+      // 2. Fallback: sessionStorage (after page refresh)
+      restaurantId = sessionStorage.getItem('ownerRestaurantId');
+      this.restaurantName = sessionStorage.getItem('ownerRestaurantName') || '';
+    }
+
+    if (restaurantId) {
+      this.loadOrders(restaurantId);
+    } else {
+      // 3. Last resort: use first restaurant from API
+      this.customerService.getRestaurantByOwner(owner.id).subscribe({
+        next: (res) => {
+          const list: any[] = res.success ? (res.data || []) : [];
+          if (list.length > 0) {
+            this.restaurantName = list[0].restaurantName;
+            this.loadOrders(list[0].restaurantId);
+          } else {
+            this.errorMessage = 'No restaurant found.';
+            this.loading = false;
+          }
+        },
+        error: () => { this.errorMessage = 'Failed to load restaurant.'; this.loading = false; }
+      });
+    }
   }
 
   loadOrders(restaurantId: string): void {
     this.customerService.getOrdersByRestaurant(restaurantId).subscribe({
       next: (res) => {
         const rawOrders: any[] = res.success ? (res.data || []) : [];
-
-        // Order items now have 'name' stored directly by backend — no extra API calls needed
         this.orders = rawOrders.map(order => ({
           ...order,
           enrichedItems: (order.items || []).map((item: any) => ({
             ...item,
-            itemName: item.name || item.itemId   // 'name' is always set by backend
+            itemName: item.name || item.itemId
           }))
         }));
-
         this.loading = false;
       },
       error: () => { this.errorMessage = 'Failed to load orders.'; this.loading = false; }
@@ -75,9 +97,13 @@ export class OrdersComponent implements OnInit {
     });
   }
 
+  /** Only count delivered orders — cancelled/pending/etc do not generate earnings */
   get totalEarnings(): number {
-    return this.orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+    return this.orders
+      .filter(o => o.status === 'delivered')
+      .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
   }
+
 
   showToast(msg: string, isError: boolean): void {
     this.toastMessage = msg;

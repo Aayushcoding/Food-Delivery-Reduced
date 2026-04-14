@@ -23,6 +23,7 @@ import { CustomerMenuComponent } from './customer/customer-menu/customer-menu.co
 import { HomePageComponent } from './RestaurantOwner/home-page/home-page.component';
 import { MenuComponent } from './RestaurantOwner/menu/menu.component';
 import { OrdersComponent } from './RestaurantOwner/orders/orders.component';
+import { ProfileComponent } from './RestaurantOwner/profile/profile.component';
 
 @NgModule({
 declarations:[
@@ -38,7 +39,8 @@ SuccessComponent,
 CustomerMenuComponent,
 HomePageComponent,
 MenuComponent,
-OrdersComponent
+OrdersComponent,
+ProfileComponent
 ],
 imports:[
 BrowserModule,
