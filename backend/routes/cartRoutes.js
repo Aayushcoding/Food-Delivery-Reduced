@@ -1,19 +1,14 @@
-////cartRoutes.js
+// cartRoutes.js
 const express = require('express');
 const router = express.Router();
 const { auth, roleAuth } = require('../middleware/auth');
 const {
-  getCarts,
   getCart,
   getCartByUser,
   addItemToCart,
   updateItemQuantity,
-  removeItemFromCart,
-  deleteCart
+  removeItemFromCart
 } = require('../controllers/cartController');
-
-// Protected — requires auth (internal/admin use only)
-router.get('/', auth, getCarts);
 
 // Customer: get own cart by userId
 router.get('/user/:userId', auth, getCartByUser);
@@ -25,6 +20,5 @@ router.get('/:id', auth, getCart);
 router.post('/add-item', auth, roleAuth(['Customer']), addItemToCart);
 router.put('/update-quantity', auth, roleAuth(['Customer']), updateItemQuantity);
 router.post('/remove-item', auth, roleAuth(['Customer']), removeItemFromCart);
-router.delete('/:id', auth, roleAuth(['Customer']), deleteCart);
 
 module.exports = router;

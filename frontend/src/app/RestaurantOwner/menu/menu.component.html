@@ -38,19 +38,7 @@
     </div>
     <input [(ngModel)]="newItem.description" placeholder="Description (optional)" class="form-input full-width" id="new-item-desc">
 
-    <!-- IMAGE UPLOAD — any format, fully optional -->
-    <div class="upload-row">
-      <label class="upload-label" for="new-item-file">
-        📁 {{ newItemFile ? newItemFile.name : 'Choose Image (optional — JPG / PNG / SVG)' }}
-      </label>
-      <input type="file" id="new-item-file" accept="image/*"
-             (change)="onNewFileSelected($event)" class="file-input-hidden">
-      <span class="upload-hint">Image is optional — item name shown if skipped</span>
-    </div>
-    <!-- preview only when file chosen -->
-    <div class="img-preview-row" *ngIf="newItemPreview">
-      <img [src]="newItemPreview" alt="preview" class="preview-img">
-    </div>
+    <!-- IMAGE UPLOAD: Coming in next sprint -->
 
     <button (click)="addItem()" [disabled]="saving" class="btn-save">
       {{ saving ? 'Saving...' : 'Save Item' }}
@@ -91,13 +79,10 @@
         <div class="price-row">
           <span class="item-price">₹{{ item.price }}</span>
           <div class="item-actions">
-            <button class="btn-toggle" (click)="toggleAvailability(item)"
-                    [title]="item.isAvailable ? 'Deactivate' : 'Activate'">
-              {{ item.isAvailable ? '🔕' : '✅' }}
-            </button>
-            <button class="btn-edit" (click)="startEdit(item)">✏️ Edit</button>
-            <button class="btn-delete" (click)="deleteItem(item)">🗑</button>
-          </div>
+              <!-- TOGGLE AVAILABILITY: Coming in next sprint -->
+              <!-- EDIT ITEM: Coming in next sprint -->
+              <button class="btn-delete" (click)="deleteItem(item)">🗑</button>
+            </div>
         </div>
       </div>
 

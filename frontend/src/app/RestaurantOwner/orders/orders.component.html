@@ -10,9 +10,7 @@
       <h1>📋 Orders</h1>
       <p class="restaurant-label" *ngIf="restaurantName">{{ restaurantName }}</p>
     </div>
-    <div class="earnings-badge">
-      💰 Total: ₹{{ totalEarnings | number:'1.0-0' }}
-    </div>
+    <!-- EARNINGS SUMMARY: Coming in next sprint -->
   </div>
 
   <!-- LOADING -->
@@ -52,12 +50,7 @@
       <!-- FOOTER -->
       <div class="order-foot">
         <span class="total-amount"><strong>Total: ₹{{ order.totalAmount | number:'1.0-0' }}</strong></span>
-        <div class="status-update">
-          <label>Update Status:</label>
-          <select (change)="updateStatus(order, $event)" [value]="order.status">
-            <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
-          </select>
-        </div>
+        <!-- STATUS UPDATE: Coming in next sprint -->
       </div>
 
     </div>

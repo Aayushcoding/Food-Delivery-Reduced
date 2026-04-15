@@ -17,7 +17,6 @@ import { NavbarComponent } from './shared/navbar/navbar.component';
 import { CustomerHomeComponent } from './customer/customer-home/customer-home.component';
 import { CustomerCartComponent } from './customer/customer-cart/customer-cart.component';
 import { CustomerOrdersComponent } from './customer/customer-orders/customer-orders.component';
-import { CustomerProfileComponent } from './customer/customer-profile/customer-profile.component';
 import { ItemCardComponent } from './customer/item-card/item-card.component';
 import { SuccessComponent } from './customer/success/success.component';
 import { CustomerMenuComponent } from './customer/customer-menu/customer-menu.component';
@@ -26,7 +25,6 @@ import { CustomerMenuComponent } from './customer/customer-menu/customer-menu.co
 import { HomePageComponent } from './RestaurantOwner/home-page/home-page.component';
 import { MenuComponent } from './RestaurantOwner/menu/menu.component';
 import { OrdersComponent } from './RestaurantOwner/orders/orders.component';
-import { ProfileComponent } from './RestaurantOwner/profile/profile.component';
 import { OwnerDashboardComponent } from './RestaurantOwner/owner-dashboard/owner-dashboard.component';
 
 @NgModule({
@@ -38,14 +36,12 @@ import { OwnerDashboardComponent } from './RestaurantOwner/owner-dashboard/owner
     CustomerHomeComponent,
     CustomerCartComponent,
     CustomerOrdersComponent,
-    CustomerProfileComponent,
     ItemCardComponent,
     SuccessComponent,
     CustomerMenuComponent,
     HomePageComponent,
     MenuComponent,
     OrdersComponent,
-    ProfileComponent,
     OwnerDashboardComponent
   ],
   imports: [

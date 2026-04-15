@@ -20,7 +20,7 @@ const resolveImage = (req) => {
 // GET /api/restaurants
 const getAllRestaurants = async (req, res) => {
   try {
-    let restaurants = await Restaurant.find({}).lean();
+    let restaurants = await Restaurant.find({}, { _id: 0 }).lean();
     const { search } = req.query;
     if (search) {
       const q = search.toLowerCase();
@@ -38,7 +38,7 @@ const getAllRestaurants = async (req, res) => {
 // GET /api/restaurants/owner/:ownerId
 const getRestaurantByOwner = async (req, res) => {
   try {
-    const restaurants = await Restaurant.find({ ownerId: req.params.ownerId }).lean();
+    const restaurants = await Restaurant.find({ ownerId: req.params.ownerId }, { _id: 0 }).lean();
     res.json({ success: true, data: restaurants });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -48,7 +48,7 @@ const getRestaurantByOwner = async (req, res) => {
 // GET /api/restaurants/:id
 const getRestaurantById = async (req, res) => {
   try {
-    const restaurant = await Restaurant.findOne({ restaurantId: req.params.id }).lean();
+    const restaurant = await Restaurant.findOne({ restaurantId: req.params.id }, { _id: 0 }).lean();
     if (!restaurant) return res.status(404).json({ success: false, message: 'Restaurant not found' });
     res.json({ success: true, data: restaurant });
   } catch (err) {
@@ -59,7 +59,7 @@ const getRestaurantById = async (req, res) => {
 // GET /api/restaurants/:id/menu
 const getRestaurantMenu = async (req, res) => {
   try {
-    const items = await Menu.find({ restaurantId: req.params.id, isAvailable: true }).lean();
+    const items = await Menu.find({ restaurantId: req.params.id, isAvailable: true }, { _id: 0 }).lean();
     res.json({ success: true, data: items });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

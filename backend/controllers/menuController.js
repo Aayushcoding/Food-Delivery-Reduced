@@ -13,7 +13,7 @@ const getAllMenuItems = async (req, res) => {
   try {
     const filter = { isAvailable: true };
     if (req.query.restaurantId) filter.restaurantId = req.query.restaurantId;
-    const items = await Menu.find(filter).lean();
+    const items = await Menu.find(filter, { _id: 0 }).lean();
     res.json({ success: true, data: items });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -23,7 +23,7 @@ const getAllMenuItems = async (req, res) => {
 // GET /api/menu/restaurant/:restaurantId  (customer — available only)
 const getMenuByRestaurant = async (req, res) => {
   try {
-    const items = await Menu.find({ restaurantId: req.params.restaurantId, isAvailable: true }).lean();
+    const items = await Menu.find({ restaurantId: req.params.restaurantId, isAvailable: true }, { _id: 0 }).lean();
     res.json({ success: true, data: items });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -33,7 +33,7 @@ const getMenuByRestaurant = async (req, res) => {
 // GET /api/menu/owner/restaurant/:restaurantId  (owner — all items)
 const getMenuByRestaurantOwner = async (req, res) => {
   try {
-    const items = await Menu.find({ restaurantId: req.params.restaurantId }).lean();
+    const items = await Menu.find({ restaurantId: req.params.restaurantId }, { _id: 0 }).lean();
     res.json({ success: true, data: items });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

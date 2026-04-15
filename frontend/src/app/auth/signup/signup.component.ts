@@ -24,14 +24,12 @@ export class SignupComponent implements OnInit{
 
   ngOnInit():void{
     this.signupForm=this.fb.group({
-      username:['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9._]+$/)]],
+      username:['', [Validators.required]],
       email:   ['', [Validators.required, Validators.email]],
-      password:['', [Validators.required, Validators.minLength(6), Validators.maxLength(16)]],
-      contact: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
-      address: this.fb.group({
-        street: ['', [Validators.required]],
-        city:   ['', [Validators.required]]
-      })
+      password:['', [Validators.required, Validators.minLength(6)]],
+      contact: [''],
+      street:  [''],
+      city:    ['']
     });
   }
 
@@ -49,15 +47,21 @@ export class SignupComponent implements OnInit{
 
     const v = this.signupForm.value;
 
-    // Owner registers with credentials only. Restaurants are created from the dashboard.
+    // Build phone — only send if provided and 10 digits
+    const phone = (v.contact || '').trim().replace(/\D/g, '');
+
     const payload:any={
       username: v.username,
       email:    v.email,
       password: v.password,
-      phoneNo:  v.contact,
-      address:  [{ street: v.address?.street, city: v.address?.city }],
+      phoneNo:  phone.length === 10 ? phone : '',
       role:     this.role==='owner' ? 'Owner' : 'Customer'
     };
+
+    // Only include address if either field is filled
+    if(v.street?.trim() || v.city?.trim()){
+      payload.address = [{ street: v.street?.trim() || '', city: v.city?.trim() || '' }];
+    }
 
     this.loginService.register(payload).subscribe({
       next:(res)=>{

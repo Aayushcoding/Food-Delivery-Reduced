@@ -23,18 +23,19 @@ export class LoginComponent implements OnInit{
   ){}
 
   ngOnInit():void{
+    // ALWAYS build the form first — prevents NG01052 formGroup binding error
+    this.loginForm=this.fb.group({
+      role:    ['Customer'],
+      email:   ['',[Validators.required,Validators.email]],
+      password:['',[Validators.required,Validators.minLength(6)]]
+    });
+
     // If already logged in, redirect to correct page
     if(this.authService.isLoggedIn()){
       const user=this.authService.getUser();
       this.redirectByRole(user?.role);
       return;
     }
-
-    this.loginForm=this.fb.group({
-      role:    ['Customer'],
-      email:   ['',[Validators.required,Validators.email]],
-      password:['',[Validators.required,Validators.minLength(6)]]
-    });
   }
 
   get f(){ return this.loginForm.controls; }
@@ -76,8 +77,6 @@ export class LoginComponent implements OnInit{
   private redirectByRole(role:string):void{
     if(role==='Owner'){
       this.router.navigate(['/restaurant']);
-    }else if(role==='DeliveryAgent'){
-      this.router.navigate(['/delivery']);
     }else{
       this.router.navigate(['/customer/customer-home']);
     }

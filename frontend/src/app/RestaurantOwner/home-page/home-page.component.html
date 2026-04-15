@@ -10,10 +10,8 @@
       <span class="owner-label">{{ owner?.username }}</span>
     </div>
     <div class="top-bar-right">
-      <button class="btn-add-rest" (click)="toggleAddForm()">
-        {{ showAddForm ? '✕ Cancel' : '➕ Add Restaurant' }}
-      </button>
-      <button class="btn-profile" (click)="goToProfile()" id="btn-owner-profile">👤 Profile</button>
+      <!-- ADD RESTAURANT: Coming in next sprint -->
+      <!-- PROFILE: Coming in next sprint -->
       <button class="btn-logout" (click)="logout()">Logout</button>
     </div>
   </div>
@@ -95,13 +93,8 @@
               <button class="btn-select" (click)="selectRestaurant(rest)">
                 {{ selectedRestaurant?.restaurantId === rest.restaurantId ? '▼ Selected' : '▶ Select' }}
               </button>
-              <button class="btn-edit-name" (click)="startRename(rest)">✏️ Edit</button>
-              <button class="btn-delete-rest"
-                (click)="deleteRestaurant(rest)"
-                [disabled]="deletingId === rest.restaurantId"
-                title="Delete restaurant">
-                {{ deletingId === rest.restaurantId ? '⏳' : '🗑' }}
-              </button>
+              <!-- EDIT RESTAURANT: Coming in next sprint -->
+              <!-- DELETE RESTAURANT: Coming in next sprint -->
             </div>
           </div>
 
@@ -179,24 +172,10 @@
       <!-- QUICK ACTIONS -->
       <div class="actions-row">
         <button class="action-btn primary" (click)="goToMenu(selectedRestaurant)">🍴 Manage Menu</button>
-        <button class="action-btn secondary" (click)="goToOrders(selectedRestaurant)">📋 View Orders</button>
+        <!-- VIEW ORDERS BUTTON: Coming in next sprint -->
       </div>
 
-      <!-- RECENT ORDERS -->
-      <div class="recent-orders" *ngIf="orders.length > 0">
-        <h2>Recent Orders</h2>
-        <div class="order-preview" *ngFor="let order of orders.slice(0, 5)">
-          <div class="order-preview-left">
-            <span class="order-id">#{{ order.id }}</span>
-            <span class="order-items">{{ order.items?.length || 0 }} item(s)</span>
-          </div>
-          <div class="order-preview-right">
-            <span class="order-amount">₹{{ order.totalAmount | number:'1.0-0' }}</span>
-            <span class="status-pill" [class]="order.status">{{ order.status }}</span>
-          </div>
-        </div>
-        <button class="view-all-btn" (click)="goToOrders(selectedRestaurant)">See all orders →</button>
-      </div>
+      <!-- RECENT ORDERS: Coming in next sprint -->
 
       <div class="no-orders" *ngIf="orders.length === 0">
         <p>No orders yet for this restaurant.</p>

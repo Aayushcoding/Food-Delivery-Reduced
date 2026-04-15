@@ -4,10 +4,7 @@
   <div class="menu-header">
     <button class="back-btn" (click)="goHome()">← Back</button>
     <h1>{{ restaurantName || 'Menu' }}</h1>
-    <button class="cart-btn" (click)="goToCart()">
-      🛒 Cart
-      <span *ngIf="totalCartCount > 0" class="cart-count-badge">{{ totalCartCount }}</span>
-    </button>
+    <!-- CART BUTTON: Coming in next sprint -->
   </div>
 
   <!-- TOAST NOTIFICATION -->

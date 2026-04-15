@@ -16,75 +16,52 @@
 
 <h3 class="mb-4">Create Account</h3>
 
-<form [formGroup]="signupForm"(ngSubmit)="onSubmit()">
+<form [formGroup]="signupForm" (ngSubmit)="onSubmit()">
 
 <!-- ROLE -->
 <div class="mb-3 text-center">
-<button type="button"class="role-btn"[class.active]="role==='customer'"(click)="selectRole('customer')">Customer</button>
-<button type="button"class="role-btn"[class.active]="role==='owner'"(click)="selectRole('owner')">Restaurant Owner</button>
+<button type="button" class="role-btn" [class.active]="role==='customer'" (click)="selectRole('customer')">Customer</button>
+<button type="button" class="role-btn" [class.active]="role==='owner'" (click)="selectRole('owner')">Restaurant Owner</button>
 </div>
 
 <!-- USERNAME -->
-<label>Username</label>
-<input type="text"class="form-control custom-input"formControlName="username"placeholder="Enter username">
-
-<div *ngIf="signupForm.get('username')?.dirty&&signupForm.get('username')?.invalid">
-<span *ngIf="signupForm.get('username')?.errors?.['required']">UserName is required</span>
-<span *ngIf="signupForm.get('username')?.errors?.['pattern']">UserName should include a-z, 0-9, ., _</span>
+<label>Username *</label>
+<input type="text" class="form-control custom-input" formControlName="username" placeholder="Enter username">
+<div *ngIf="signupForm.get('username')?.dirty && signupForm.get('username')?.invalid">
+  <span class="text-danger" *ngIf="signupForm.get('username')?.errors?.['required']">Username is required</span>
 </div>
 
-
 <!-- EMAIL -->
-<label class="mt-3">Email</label>
-<input type="email"class="form-control custom-input"formControlName="email"placeholder="Enter email">
-
-<div *ngIf="signupForm.get('email')?.dirty&&signupForm.get('email')?.invalid">
-<span *ngIf="signupForm.get('email')?.errors?.['required']">Email Id is required</span>
-<span *ngIf="signupForm.get('email')?.errors?.['email']">Email is not in the required pattern</span>
+<label class="mt-3">Email *</label>
+<input type="email" class="form-control custom-input" formControlName="email" placeholder="Enter email">
+<div *ngIf="signupForm.get('email')?.dirty && signupForm.get('email')?.invalid">
+  <span class="text-danger" *ngIf="signupForm.get('email')?.errors?.['required']">Email is required</span>
+  <span class="text-danger" *ngIf="signupForm.get('email')?.errors?.['email']">Invalid email format</span>
 </div>
 
 <!-- PASSWORD -->
-<label class="mt-3">Password</label>
-<input type="password"class="form-control custom-input"formControlName="password"placeholder="Enter password">
-
-<div *ngIf="signupForm.get('password')?.dirty&&signupForm.get('password')?.invalid">
-<span *ngIf="signupForm.get('password')?.errors?.['required']">Password Required</span>
-<span *ngIf="signupForm.get('password')?.errors?.['minlength']">Password should have minimum length of 6 characters</span>
-<span *ngIf="signupForm.get('password')?.errors?.['maxlength']">Password should have maximum length 0f 16 characters</span>
+<label class="mt-3">Password *</label>
+<input type="password" class="form-control custom-input" formControlName="password" placeholder="Enter password (min 6 chars)">
+<div *ngIf="signupForm.get('password')?.dirty && signupForm.get('password')?.invalid">
+  <span class="text-danger" *ngIf="signupForm.get('password')?.errors?.['required']">Password is required</span>
+  <span class="text-danger" *ngIf="signupForm.get('password')?.errors?.['minlength']">Minimum 6 characters</span>
 </div>
 
-<!-- CONTACT -->
-<label class="mt-3">Contact</label>
-<input type="text"class="form-control custom-input"formControlName="contact"placeholder="Enter number">
+<!-- CONTACT (optional) -->
+<label class="mt-3">Phone (optional)</label>
+<input type="text" class="form-control custom-input" formControlName="contact" placeholder="10-digit mobile number">
 
-<div *ngIf="signupForm.get('contact')?.dirty&&signupForm.get('contact')?.invalid">
-<span *ngIf="signupForm.get('contact')?.errors?.['required']">Contact No is required</span>
-<span *ngIf="signupForm.get('contact')?.errors?.['pattern']">Contact No should correct Indian Number starting from 6-9</span>
-</div>
-
-<!-- ADDRESS -->
-<label class="mt-3">Address</label>
-
-<div formGroupName="address">
-<input type="text"class="form-control custom-input mb-2"formControlName="street"placeholder="Street">
-
-<div *ngIf="signupForm.get('address.street')?.dirty&&signupForm.get('address.street')?.invalid">
-<span *ngIf="signupForm.get('address.street')?.errors?.['required']">Address is required</span>
-</div>
-
-<input type="text"class="form-control custom-input"formControlName="city"placeholder="City">
-
-<div *ngIf="signupForm.get('address.city')?.dirty&&signupForm.get('address.city')?.invalid">
-<span *ngIf="signupForm.get('address.city')?.errors?.['required']">Address is required</span>
-</div>
-</div>
+<!-- ADDRESS (optional) -->
+<label class="mt-3">Address (optional)</label>
+<input type="text" class="form-control custom-input mb-2" formControlName="street" placeholder="Street">
+<input type="text" class="form-control custom-input" formControlName="city" placeholder="City">
 
 <!-- MESSAGES -->
 <div *ngIf="errorMessage" class="alert alert-danger mt-2">{{errorMessage}}</div>
 <div *ngIf="successMessage" class="alert alert-success mt-2">{{successMessage}}</div>
 
 <!-- BUTTON -->
-<button class="btn signup-btn w-100 mt-4" [disabled]="isLoading">
+<button class="btn signup-btn w-100 mt-4" type="submit" [disabled]="isLoading">
   {{ isLoading ? 'Creating Account...' : 'Sign Up' }}
 </button>
 
