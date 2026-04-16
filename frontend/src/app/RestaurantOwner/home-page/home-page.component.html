@@ -10,7 +10,7 @@
       <span class="owner-label">{{ owner?.username }}</span>
     </div>
     <div class="top-bar-right">
-      <!-- ADD RESTAURANT: Coming in next sprint -->
+      <button class="btn-add" (click)="toggleAddForm()">+ Add Restaurant</button>
       <!-- PROFILE: Coming in next sprint -->
       <button class="btn-logout" (click)="logout()">Logout</button>
     </div>
@@ -34,18 +34,7 @@
              class="form-input" id="new-rest-cuisine">
     </div>
 
-    <!-- FILE UPLOAD — any image format, optional -->
-    <div class="upload-row">
-      <label class="upload-label" for="new-rest-file">
-        📁 {{ newRestFile ? newRestFile.name : 'Choose Image (optional — JPG / PNG / SVG)' }}
-      </label>
-      <input type="file" id="new-rest-file" accept="image/*"
-             (change)="onNewRestFileSelected($event)" class="file-input-hidden">
-    </div>
-    <!-- preview only shown when file is picked -->
-    <div class="img-preview" *ngIf="newRestPreview">
-      <img [src]="newRestPreview" alt="preview" class="preview-img">
-    </div>
+    <!-- IMAGE UPLOAD: Coming in next sprint -->
 
     <button class="btn-save" (click)="addRestaurant()" [disabled]="saving">
       {{ saving ? 'Creating...' : '✅ Create Restaurant' }}

@@ -40,18 +40,10 @@
           <p class="cart-unit-price">₹{{ item.price | number:'1.0-0' }} each</p>
         </div>
 
-        <!-- Right: Stepper + Subtotal + Remove -->
+        <!-- Right: Qty display + Subtotal + Remove -->
         <div class="card-right">
-          <!-- Quantity stepper -->
-          <div class="qty-stepper">
-            <button class="qty-btn minus"
-              (click)="decrease(item)"
-              [disabled]="inFlight[item.itemId]">−</button>
-            <span class="qty-value">{{ item.quantity }}</span>
-            <button class="qty-btn plus"
-              (click)="increase(item)"
-              [disabled]="inFlight[item.itemId]">+</button>
-          </div>
+          <!-- Quantity display only (update coming soon) -->
+          <span class="qty-value">Qty: {{ item.quantity }}</span>
 
           <!-- Subtotal -->
           <span class="item-subtotal">₹{{ (item.price * item.quantity) | number:'1.0-0' }}</span>

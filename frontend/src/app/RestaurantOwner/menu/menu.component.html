@@ -99,17 +99,7 @@
         </div>
         <input [(ngModel)]="editData.description" placeholder="Description" class="edit-input full" id="edit-desc">
 
-        <!-- Edit image upload -->
-        <div class="upload-row edit-upload">
-          <label class="upload-label" for="edit-item-file">
-            📁 {{ editFile ? editFile.name : 'Replace Image (optional)' }}
-          </label>
-          <input type="file" id="edit-item-file" accept="image/*"
-                 (change)="onEditFileSelected($event)" class="file-input-hidden">
-        </div>
-        <div class="img-preview-row" *ngIf="editPreview">
-          <img [src]="editPreview" alt="new preview" class="preview-img">
-        </div>
+        <!-- IMAGE UPLOAD: Coming in next sprint -->
 
         <div class="edit-actions">
           <button class="btn-save-small" (click)="saveEdit(item)">✅ Save</button>
